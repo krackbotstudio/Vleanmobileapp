@@ -1,0 +1,6 @@
+# Copy to key.properties and provide the EXISTING Dark to White upload key.
+# Use an absolute path with forward slashes. Keep the populated file private.
+storeFile=C:/path/to/existing-dark-to-white-upload-key.jks
+storePassword=REPLACE_LOCALLY
+keyAlias=REPLACE_LOCALLY
+keyPassword=REPLACE_LOCALLY

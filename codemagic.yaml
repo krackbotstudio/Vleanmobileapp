@@ -1,0 +1,22 @@
+workflows:
+  ios-app-store-artifact:
+    name: Vclean iOS App Store artifact
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.47.9
+      xcode: 16.4
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.vcleanlaundry
+    scripts:
+      - name: Install Flutter packages
+        script: flutter pub get
+      - name: Apply the App Store signing profile
+        script: xcode-project use-profiles
+      - name: Build signed iOS archive
+        script: flutter build ipa --release --build-name=0.0.1 --build-number=1
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/Runner.xcarchive

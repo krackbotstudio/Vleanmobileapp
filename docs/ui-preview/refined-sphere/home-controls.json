@@ -1,0 +1,222 @@
+[
+  {
+    "text": "Toggle Dark/Light Mode",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 282,
+      "y": 10,
+      "w": 42,
+      "h": 42
+    }
+  },
+  {
+    "text": "Notifications",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 332,
+      "y": 10,
+      "w": 42,
+      "h": 42
+    }
+  },
+  {
+    "text": "Rotate services",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 338,
+      "y": 298.79998779296875,
+      "w": 40,
+      "h": 40
+    }
+  },
+  {
+    "text": "Choose another date\nSaturday, November 7, 2026\nSunday, November 8, 2026\nMonday, November 9, 2026\nTuesday, November 10, 2026\nWednesday, November 11, 2026\nThursday, November 12, 2026\nFriday, November 13, 2026\n9 AM – 12 PM\n12 PM – 3 PM\n3 PM – 6 PM\nContinue",
+    "label": "Select pickup date\nChoose a day that works for you\nSelect time slot\nPreview slots · availability is not confirmed. No pickup will be booked.",
+    "role": "group",
+    "rect": {
+      "x": 0,
+      "y": 342.79998779296875,
+      "w": 390,
+      "h": 395.1875
+    }
+  },
+  {
+    "text": "Choose another date",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 334,
+      "y": 344.79998779296875,
+      "w": 40,
+      "h": 40
+    }
+  },
+  {
+    "text": "Saturday, November 7, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 16,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "Sunday, November 8, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 94,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "Monday, November 9, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 172,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "Tuesday, November 10, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 250,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "Wednesday, November 11, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 328,
+      "y": 412.79998779296875,
+      "w": 46,
+      "h": 88
+    }
+  },
+  {
+    "text": "Thursday, November 12, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 406,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "Friday, November 13, 2026",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 484,
+      "y": 412.79998779296875,
+      "w": 70,
+      "h": 88
+    }
+  },
+  {
+    "text": "9 AM – 12 PM",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 16,
+      "y": 558.7999877929688,
+      "w": 174,
+      "h": 48
+    }
+  },
+  {
+    "text": "12 PM – 3 PM",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 200,
+      "y": 558.7999877929688,
+      "w": 174,
+      "h": 48
+    }
+  },
+  {
+    "text": "3 PM – 6 PM",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 16,
+      "y": 616.7999877929688,
+      "w": 174,
+      "h": 48
+    }
+  },
+  {
+    "text": "Continue",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 16,
+      "y": 682.7999877929688,
+      "w": 358,
+      "h": 48
+    }
+  },
+  {
+    "text": "Home Home",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 58.79999923706055,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  },
+  {
+    "text": "Prices Prices",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 126.9000015258789,
+      "y": 747,
+      "w": 68.09374237060547,
+      "h": 68
+    }
+  },
+  {
+    "text": "Orders Orders",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 195,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  },
+  {
+    "text": "Profile Profile",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 263.1000061035156,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  }
+]

@@ -1,0 +1,146 @@
+[
+  {
+    "timestamp": 1793902683942.086,
+    "exceptionDetails": {
+      "exceptionId": 1,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 3804,
+      "columnNumber": 10,
+      "scriptId": "9",
+      "url": "http://127.0.0.1:8780/dart_sdk.js",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "throw_",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 3804,
+            "columnNumber": 10
+          },
+          {
+            "functionName": "assertFailed",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 3732,
+            "columnNumber": 14
+          },
+          {
+            "functionName": "[_computeOnScreenKeyboardInsets]",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 241712,
+            "columnNumber": 49
+          },
+          {
+            "functionName": "[_handleBrowserResize]",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 241696,
+            "columnNumber": 44
+          },
+          {
+            "functionName": "tear",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 3849,
+            "columnNumber": 45
+          },
+          {
+            "functionName": "runUnaryGuarded",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 40171,
+            "columnNumber": 10
+          },
+          {
+            "functionName": "[_sendData]",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 36426,
+            "columnNumber": 18
+          },
+          {
+            "functionName": "perform",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 36705,
+            "columnNumber": 25
+          },
+          {
+            "functionName": "handleNext",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 36858,
+            "columnNumber": 12
+          },
+          {
+            "functionName": "",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 36830,
+            "columnNumber": 13
+          },
+          {
+            "functionName": "_microtaskLoop",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 42059,
+            "columnNumber": 42
+          },
+          {
+            "functionName": "_startMicrotaskLoop",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 42066,
+            "columnNumber": 12
+          },
+          {
+            "functionName": "tear",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 3849,
+            "columnNumber": 45
+          },
+          {
+            "functionName": "",
+            "scriptId": "9",
+            "url": "http://127.0.0.1:8780/dart_sdk.js",
+            "lineNumber": 34215,
+            "columnNumber": 72
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "DartError",
+        "description": "DartError: Assertion failed: org-dartlang-sdk:///lib/_engine/engine/window.dart:350:7\n_viewInsets.isNonNegative\n\"ViewInsets cannot be negative. This is usually caused by an incorrect physicalSize calculation when the keyboard is being dismissed.\"\n    at Object.throw_ [as throw] (http://127.0.0.1:8780/dart_sdk.js:3805:11)\n    at Object.assertFailed (http://127.0.0.1:8780/dart_sdk.js:3733:15)\n    at [_computeOnScreenKeyboardInsets] (http://127.0.0.1:8780/dart_sdk.js:241713:50)\n    at [_handleBrowserResize] (http://127.0.0.1:8780/dart_sdk.js:241697:45)\n    at tear (http://127.0.0.1:8780/dart_sdk.js:3850:46)\n    at _RootZone.runUnaryGuarded (http://127.0.0.1:8780/dart_sdk.js:40172:11)\n    at [_sendData] (http://127.0.0.1:8780/dart_sdk.js:36427:19)\n    at dartDevEmbedder.defineLibrary.async._DelayedData.new.perform (http://127.0.0.1:8780/dart_sdk.js:36706:26)\n    at dartDevEmbedder.defineLibrary.async._PendingEvents.new.handleNext (http://127.0.0.1:8780/dart_sdk.js:36859:13)\n    at http://127.0.0.1:8780/dart_sdk.js:36831:14\n    at Object._microtaskLoop (http://127.0.0.1:8780/dart_sdk.js:42060:43)\n    at Object._startMicrotaskLoop (http://127.0.0.1:8780/dart_sdk.js:42067:13)\n    at tear (http://127.0.0.1:8780/dart_sdk.js:3850:46)\n    at http://127.0.0.1:8780/dart_sdk.js:34216:73",
+        "objectId": "-1069736873995515760.2.1",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "DartError: Assertion failed: org-dartlang-sdk:///lib/_engine/engine/window.dart:350:7\n_viewInsets.isNonNegative\n\"ViewInsets cannot be negative. This is usually caused by an incorrect physicalSize calculation when the keyboard is being dismissed.\"\n    at Object.throw_ [as throw] (http://127.0.0.1:8780/dart_sdk.js:3805:11)\n    at Object.assertFailed (http://127.0.0.1:8780/dart_sdk.js:3733:15)\n    at [_computeOnScreenKeyboardInsets] (http://127.0.0.1:8780/dart_sdk.js:241713:50)\n    at [_handleBrowserResize] (http://127.0.0.1:8780/dart_sdk.js:241697:45)\n    at tear (http://127.0.0.1:8780/dart_sdk.js:3850:46)\n    at _RootZone.runUnaryGuarded (http://127.0.0.1:8780/dart_sdk.js:40172:11)\n    at [_sendData] (http://127.0.0.1:8780/dart_sdk.js:36427:19)\n    at dartDevEmbedder.defineLibrary.async._DelayedData.new.perform (http://127.0.0.1:8780/dart_sdk.js:36706:26)\n    at dartDevEmbedder.defineLibrary.async._PendingEvents.new.handleNext (http://127.0.0.1:8780/dart_sdk.js:36859:13)\n    at http://127.0.0.1:8780/dart_sdk.js:36831:14\n    at Object._microtaskLoop (http://127.0.0.1:8780/dart_sdk.js:42060:43)\n    at Object._startMicrotaskLoop (http://127.0.0.1:8780/dart_sdk.js:42067:13)\n    at tear (http://127.0.0.1:8780/dart_sdk.js:3850:46)\n    at http://127.0.0.1:8780/dart_sdk.js:34216:73",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error\n    at Object.throw_ [as throw] (http://127.…    at http://127.0.0.1:8780/dart_sdk.js:34216:73"
+            },
+            {
+              "name": "Symbol(_thrownValue)",
+              "type": "object",
+              "value": "dartDevEmbedder.defineLibrary._js_helper.AssertionErrorImpl.new"
+            },
+            {
+              "name": "Symbol(_stackTrace)",
+              "type": "object",
+              "value": "dartDevEmbedder.defineLibrary.dart._StackTrace.new"
+            }
+          ]
+        }
+      },
+      "executionContextId": 2
+    }
+  }
+]

@@ -1,0 +1,101 @@
+[
+  {
+    "text": "",
+    "label": "Dark to White chrome logo",
+    "role": "img",
+    "rect": {
+      "x": 141,
+      "y": 173.5,
+      "w": 108,
+      "h": 108
+    }
+  },
+  {
+    "text": "Terms & Conditions",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 62.238525390625,
+      "y": 432.5,
+      "w": 142.328125,
+      "h": 32
+    }
+  },
+  {
+    "text": "Privacy Policy",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 214.569580078125,
+      "y": 432.5,
+      "w": 113.1875,
+      "h": 32
+    }
+  },
+  {
+    "text": "Accept & Send OTP",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 32,
+      "y": 488.5,
+      "w": 326,
+      "h": 48
+    }
+  },
+  {
+    "text": "",
+    "label": "Tectangle",
+    "role": "img",
+    "rect": {
+      "x": 216.96533203125,
+      "y": 550.5,
+      "w": 85,
+      "h": 22
+    }
+  },
+  {
+    "text": "Home Home",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 58.79999923706055,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  },
+  {
+    "text": "Prices Prices",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 126.9000015258789,
+      "y": 747,
+      "w": 68.09374237060547,
+      "h": 68
+    }
+  },
+  {
+    "text": "Orders Orders",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 195,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  },
+  {
+    "text": "Profile Profile",
+    "label": null,
+    "role": "button",
+    "rect": {
+      "x": 263.1000061035156,
+      "y": 747,
+      "w": 68.09375,
+      "h": 68
+    }
+  }
+]
