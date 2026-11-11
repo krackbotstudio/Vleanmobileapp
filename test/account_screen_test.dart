@@ -147,36 +147,36 @@ void main() {
                   'timeWindow': '12 PM – 3 PM',
                   'serviceType': 'DRY_CLEAN',
                   'addressLine': 'Example pickup address',
-                'pincode': '500001',
-                'invoices': [
-                  {
-                    'id': 'ack',
-                    'type': 'ACKNOWLEDGEMENT',
-                    'total': 120050,
-                    'advancePaymentAmount': 20000,
-                  },
-                  {
-                    'id': 'final',
-                    'type': 'FINAL',
-                    'total': 120050,
-                    'subtotal': 120050,
-                    'items': [
-                      {
-                        'id': 'shirt',
-                        'name': 'Shirt',
-                        'quantity': 2,
-                        'unitPrice': 60025,
-                        'amount': 120050,
-                      },
-                    ],
-                  },
-                ],
-              }),
-            ),
-            200,
-            headers: {'content-type': 'application/json; charset=utf-8'},
-          );
-        }),
+                  'pincode': '500001',
+                  'invoices': [
+                    {
+                      'id': 'ack',
+                      'type': 'ACKNOWLEDGEMENT',
+                      'total': 120050,
+                      'advancePaymentAmount': 20000,
+                    },
+                    {
+                      'id': 'final',
+                      'type': 'FINAL',
+                      'total': 120050,
+                      'subtotal': 120050,
+                      'items': [
+                        {
+                          'id': 'shirt',
+                          'name': 'Shirt',
+                          'quantity': 2,
+                          'unitPrice': 60025,
+                          'amount': 120050,
+                        },
+                      ],
+                    },
+                  ],
+                }),
+              ),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }),
         ),
       );
       await mount(

@@ -133,64 +133,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: Colors.transparent,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: .08),
-            borderRadius: BorderRadius.circular(10),
+        leading: IconChip(
+          Icon(
+            icon,
+            color: danger ? color : Theme.of(context).colorScheme.primary,
+            size: 19,
           ),
-          child: Icon(icon, color: color, size: 18),
         ),
         title: Text(
           label,
           style: TextStyle(
             color: color,
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
         subtitle: subtitle == null
             ? null
             : Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: Icon(Icons.chevron_right, color: color, size: 20),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: danger ? color : mutedText(context),
+          size: 22,
+        ),
         onTap: onTap,
       ),
     );
   }
 
+  Widget fieldIcon(IconData icon) =>
+      IconChip(Icon(icon, size: 19, color: mutedText(context)));
+
   @override
   Widget build(BuildContext context) {
     final signedIn = widget.session != null;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return RefreshIndicator(
       onRefresh: refresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Container(
-            color: dark ? Colors.black : Colors.white,
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+            color: Colors.transparent,
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
             child: Column(
               children: [
-                Image.asset(
-                  'assets/vclean-logo.png',
-                  width: signedIn ? 104 : 96,
-                  height: signedIn ? 104 : 96,
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: neuRaised(
+                    Theme.of(context).brightness == Brightness.dark,
+                    radius: 32,
+                    depth: 9,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(BrandColors.logo, width: 84, height: 84),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
                 Text(
                   signedIn
                       ? (customer?.name?.trim().isNotEmpty == true
                             ? customer!.name!
                             : 'Your Name')
                       : 'Welcome',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   signedIn
                       ? (customer?.phone != null && customer!.phone.isNotEmpty
@@ -198,18 +207,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : (customer?.email ?? ''))
                       : 'Sign in to manage your profile and addresses',
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontSize: 13),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: mutedText(context),
+                  ),
                 ),
                 if (!signedIn)
                   Padding(
-                    padding: const EdgeInsets.only(top: 20),
+                    padding: const EdgeInsets.only(top: 24),
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 44),
-                        shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        minimumSize: const Size(220, 56),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
                       ),
                       onPressed: widget.signIn,
                       child: const Text('Log in / Sign up'),
@@ -233,49 +243,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          TextFormField(
-                            key: const Key('profile-name'),
-                            controller: name,
-                            enabled: !loading && !saving,
-                            textCapitalization: TextCapitalization.words,
-                            maxLength: 100,
-                            decoration: const InputDecoration(
-                              labelText: 'Name',
-                              hintText: 'Full name',
-                              counterText: '',
+                          NeuField(
+                            leading: fieldIcon(Icons.person_outline_rounded),
+                            child: TextFormField(
+                              key: const Key('profile-name'),
+                              controller: name,
+                              enabled: !loading && !saving,
+                              textCapitalization: TextCapitalization.words,
+                              maxLength: 100,
+                              decoration: neuBareField.copyWith(
+                                labelText: 'Name',
+                                hintText: 'Full name',
+                                counterText: '',
+                              ),
+                              validator: (v) => (v ?? '').trim().isEmpty
+                                  ? 'Enter your name.'
+                                  : null,
                             ),
-                            validator: (v) => (v ?? '').trim().isEmpty
-                                ? 'Enter your name.'
-                                : null,
                           ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            key: const Key('profile-email'),
-                            controller: email,
-                            enabled: !loading && !saving,
-                            keyboardType: TextInputType.emailAddress,
-                            maxLength: 254,
-                            decoration: const InputDecoration(
-                              labelText: 'Email (optional)',
-                              counterText: '',
+                          const SizedBox(height: 16),
+                          NeuField(
+                            leading: fieldIcon(Icons.mail_outline_rounded),
+                            child: TextFormField(
+                              key: const Key('profile-email'),
+                              controller: email,
+                              enabled: !loading && !saving,
+                              keyboardType: TextInputType.emailAddress,
+                              maxLength: 254,
+                              decoration: neuBareField.copyWith(
+                                labelText: 'Email (optional)',
+                                counterText: '',
+                              ),
+                              validator: (v) =>
+                                  (v ?? '').trim().isNotEmpty &&
+                                      !RegExp(
+                                        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                      ).hasMatch(v!.trim())
+                                  ? 'Enter a valid email address.'
+                                  : null,
                             ),
-                            validator: (v) =>
-                                (v ?? '').trim().isNotEmpty &&
-                                    !RegExp(
-                                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                                    ).hasMatch(v!.trim())
-                                ? 'Enter a valid email address.'
-                                : null,
                           ),
-                          const SizedBox(height: 14),
-                          InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Mobile (cannot be changed)',
-                              suffixIcon: Icon(Icons.lock_outline, size: 18),
+                          const SizedBox(height: 16),
+                          NeuField(
+                            leading: fieldIcon(Icons.phone_iphone_rounded),
+                            child: InputDecorator(
+                              decoration: neuBareField.copyWith(
+                                labelText: 'Mobile (cannot be changed)',
+                                suffixIcon: Icon(
+                                  Icons.lock_outline,
+                                  size: 18,
+                                  color: mutedText(context),
+                                ),
+                              ),
+                              child: Text(customer?.phone ?? ''),
                             ),
-                            child: Text(customer?.phone ?? ''),
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 24),
                           FilledButton(
                             key: const Key('profile-save'),
                             onPressed: loading || saving ? null : save,
@@ -306,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           subtitle: 'Manage saved pickup locations',
                         ),
-                        const Divider(height: 1, indent: 64),
+                        const Divider(height: 1, indent: 70, endIndent: 16),
                         action(
                           Icons.receipt_long_outlined,
                           'My Orders',
@@ -331,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           widget.brand?.terms ?? '',
                         ),
                       ),
-                      const Divider(height: 1, indent: 64),
+                      const Divider(height: 1, indent: 70, endIndent: 16),
                       action(
                         Icons.policy_outlined,
                         'Privacy policy',
@@ -342,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       if (signedIn) ...[
-                        const Divider(height: 1, indent: 64),
+                        const Divider(height: 1, indent: 70, endIndent: 16),
                         action(
                           Icons.delete_outline,
                           'Delete account',

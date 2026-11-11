@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'appearance.dart';
 import 'auth.dart';
@@ -16,11 +15,13 @@ import 'prices_screen.dart';
 import 'pickup_schedule.dart';
 import 'service_sphere.dart';
 import 'account_data.dart';
+import 'account_widgets.dart';
 import 'addresses_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
+import 'welcome_flow.dart';
 
-void main() => runApp(const VcleanApp());
+void main() => runApp(const VcleanApp(showIntro: true));
 
 typedef DarkToWhiteApp = VcleanApp;
 
@@ -32,6 +33,7 @@ class VcleanApp extends StatefulWidget {
   final SessionStore? sessionStore;
   final AccountApi? accountApi;
   final bool enableVideo;
+  final bool showIntro;
   const VcleanApp({
     super.key,
     this.loadBrand,
@@ -41,13 +43,59 @@ class VcleanApp extends StatefulWidget {
     this.sessionStore,
     this.accountApi,
     this.enableVideo = true,
+    this.showIntro = false,
   });
   @override
   State<VcleanApp> createState() => _VcleanAppState();
 }
 
 class _VcleanAppState extends State<VcleanApp> {
-  bool dark = true;
+  bool dark = false;
+  bool ready = false;
+  bool introDone = false;
+  bool startAtLogin = true;
+  String language = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.showIntro) {
+      ready = true;
+      introDone = true;
+      return;
+    }
+    loadIntro();
+  }
+
+  Future<void> loadIntro() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        language = prefs.getString('vclean_language') ?? 'en';
+        introDone = prefs.getBool('vclean_intro_seen') ?? false;
+        ready = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => ready = true);
+    }
+  }
+
+  Future<void> completeIntro(bool toLogin) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('vclean_intro_seen', true);
+      await prefs.setString('vclean_language', language);
+    } catch (_) {
+      // The intro can still finish if preferences are unavailable.
+    }
+    if (!mounted) return;
+    setState(() {
+      introDone = true;
+      startAtLogin = toLogin;
+    });
+  }
+
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Vclean Laundry',
@@ -55,22 +103,43 @@ class _VcleanAppState extends State<VcleanApp> {
     theme: customerTheme(false),
     darkTheme: customerTheme(true),
     themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-    home: CustomerShell(
-      dark: dark,
-      toggleTheme: () => setState(() => dark = !dark),
-      loadBrand: widget.loadBrand,
-      loadBanners: widget.loadBanners,
-      loadCatalogue: widget.loadCatalogue,
-      auth: widget.auth,
-      sessionStore: widget.sessionStore,
-      accountApi: widget.accountApi,
-      enableVideo: widget.enableVideo,
-    ),
+    locale: Locale(language),
+    supportedLocales: const [
+      Locale('en'),
+      Locale('ta'),
+      Locale('ml'),
+      Locale('hi'),
+    ],
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    home: !ready
+        ? const SplashScreen()
+        : introDone
+        ? CustomerShell(
+            dark: dark,
+            startAtLogin: startAtLogin,
+            toggleTheme: () => setState(() => dark = !dark),
+            loadBrand: widget.loadBrand,
+            loadBanners: widget.loadBanners,
+            loadCatalogue: widget.loadCatalogue,
+            auth: widget.auth,
+            sessionStore: widget.sessionStore,
+            accountApi: widget.accountApi,
+            enableVideo: widget.enableVideo,
+          )
+        : WelcomeFlow(
+            language: language,
+            onLanguage: (code) => setState(() => language = code),
+            onFinished: completeIntro,
+          ),
   );
 }
 
 class CustomerShell extends StatefulWidget {
-  final bool dark, enableVideo;
+  final bool dark, enableVideo, startAtLogin;
   final VoidCallback toggleTheme;
   final Future<BrandInfo> Function()? loadBrand;
   final Future<List<String>> Function()? loadBanners;
@@ -81,6 +150,7 @@ class CustomerShell extends StatefulWidget {
   const CustomerShell({
     super.key,
     required this.dark,
+    this.startAtLogin = true,
     required this.toggleTheme,
     this.loadBrand,
     this.loadBanners,
@@ -106,7 +176,8 @@ class _CustomerShellState extends State<CustomerShell> {
   int sessionGeneration = 0;
   BrandInfo? brand;
   List<String> banners = [];
-  bool login = true, loading = true, failed = false;
+  late bool login;
+  bool loading = true, failed = false;
   int tab = 0;
   List<SavedAddress> addresses = [];
   SavedAddress? selectedAddress;
@@ -117,6 +188,7 @@ class _CustomerShellState extends State<CustomerShell> {
   @override
   void initState() {
     super.initState();
+    login = widget.startAtLogin;
     auth = widget.auth ?? AuthApi(CustomerApi(client));
     sessionStore = widget.sessionStore ?? platformSessionStore();
     accounts = widget.accountApi ?? AccountApi(CustomerApi(client));
@@ -330,10 +402,6 @@ class _CustomerShellState extends State<CustomerShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: widget.dark ? Colors.black : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
       builder: (sheetContext) {
         final media = MediaQuery.of(sheetContext);
         return Padding(
@@ -357,19 +425,17 @@ class _CustomerShellState extends State<CustomerShell> {
                   padding: const EdgeInsets.fromLTRB(22, 8, 12, 0),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Schedule Pickup',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: Theme.of(sheetContext).textTheme.titleLarge,
                         ),
                       ),
-                      IconButton(
+                      NeuIconButton(
+                        icon: Icons.close,
                         tooltip: 'Close booking',
+                        size: 40,
                         onPressed: () => Navigator.pop(sheetContext),
-                        icon: const Icon(Icons.close),
                       ),
                     ],
                   ),
@@ -458,14 +524,16 @@ class _CustomerShellState extends State<CustomerShell> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Notifications',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
+                    NeuIconButton(
+                      icon: Icons.close,
+                      tooltip: 'Close notifications',
+                      size: 40,
                       onPressed: () => Navigator.pop(sheetContext),
                     ),
                   ],
@@ -490,14 +558,20 @@ class _CustomerShellState extends State<CustomerShell> {
                     ),
                   )
                 else
-                  ...items.map((n) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.notifications_active_outlined, size: 18),
+                  ...items.map(
+                    (n) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: IconChip(
+                        Icon(
+                          Icons.notifications_active_outlined,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      title: Text(n['title'] ?? 'Order update'),
+                      subtitle: Text(n['body'] ?? n['message'] ?? ''),
                     ),
-                    title: Text(n['title'] ?? 'Order update'),
-                    subtitle: Text(n['body'] ?? n['message'] ?? ''),
-                  )),
+                  ),
               ],
             ),
           );
@@ -508,73 +582,86 @@ class _CustomerShellState extends State<CustomerShell> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: widget.dark
-              ? const [Color(0xFF12131A), Color(0xFF07070A), Color(0xFF0E1016)]
-              : const [Color(0xFFECEEF5), Color(0xFFF5F5F7), Colors.white],
-        ),
-      ),
+    body: DecoratedBox(
+      decoration: pageBackdrop(widget.dark),
       child: SafeArea(
+        bottom: login,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: login
-                ? Stack(
-                    children: [
-                      Positioned.fill(
-                        child: LoginScreen(
-                          auth: auth,
-                          onAuthenticated: authenticated,
-                          brand: brand,
-                          enableVideo: widget.enableVideo,
-                        ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: navigation(),
-                      ),
-                    ],
+                ? LoginScreen(
+                    auth: auth,
+                    onAuthenticated: authenticated,
+                    brand: brand,
+                    enableVideo: widget.enableVideo,
+                    onSkip: () => navigate(tab),
                   )
                 : Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 16, 18, 12),
                         child: Row(
                           children: [
-                            Expanded(
-                              child: Text(
-                                session?.customer.name?.trim().isNotEmpty ==
-                                        true
-                                    ? 'Hello ${session!.customer.name!.trim()}'
-                                    : 'Hello',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: .2,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: neuRaised(
+                                widget.dark,
+                                radius: 16,
+                                depth: 4,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.asset(
+                                  BrandColors.logo,
+                                  width: 34,
+                                  height: 34,
+                                  excludeFromSemantics: true,
                                 ),
                               ),
                             ),
-                            headerButton(
-                              widget.dark ? Icons.light_mode : Icons.dark_mode,
-                              'Toggle Dark/Light Mode',
-                              widget.toggleTheme,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    session?.customer.name?.trim().isNotEmpty ==
+                                            true
+                                        ? 'Hello ${session!.customer.name!.trim()}'
+                                        : 'Hello',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(fontSize: 22),
+                                  ),
+                                  Text(
+                                    'Laundry, done for you',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: mutedText(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            headerButton(
-                              Icons.notifications_none,
-                              'Notifications',
-                              showNotificationsSheet,
+                            NeuIconButton(
+                              icon: widget.dark
+                                  ? Icons.light_mode
+                                  : Icons.dark_mode,
+                              tooltip: 'Toggle Dark/Light Mode',
+                              onPressed: widget.toggleTheme,
+                              accent: true,
+                            ),
+                            const SizedBox(width: 10),
+                            NeuIconButton(
+                              icon: Icons.notifications_none,
+                              tooltip: 'Notifications',
+                              onPressed: showNotificationsSheet,
                             ),
                           ],
                         ),
@@ -604,127 +691,107 @@ class _CustomerShellState extends State<CustomerShell> {
     ),
   );
 
-  Widget headerButton(IconData icon, String tooltip, VoidCallback action) =>
-      IconButton(
-        tooltip: tooltip,
-        onPressed: action,
-        icon: Icon(icon, size: 24),
-        style: IconButton.styleFrom(
-          backgroundColor: widget.dark
-              ? Colors.white.withValues(alpha: .1)
-              : Colors.black.withValues(alpha: .04),
-          side: BorderSide(color: Theme.of(context).colorScheme.outline),
-          fixedSize: const Size(42, 42),
-        ),
-      );
-
-  Widget navigation() => LayoutBuilder(
-    builder: (context, constraints) {
-      final navWidth = math.min(300.0, (constraints.maxWidth - 32) * .8);
-      final circle = math.min(58.0, (navWidth - 12) / 4);
-      final fg = Theme.of(context).colorScheme.onSurface;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-        child: Center(
-          child: Container(
-            width: navWidth,
-            height: 70,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(35),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(35),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: widget.dark
-                        ? const Color(0x8C121216)
-                        : const Color(0x8CFFFFFF),
-                    borderRadius: BorderRadius.circular(35),
-                    border: Border.all(
-                      color: widget.dark
-                          ? const Color(0x47FFFFFF)
-                          : const Color(0xBFFFFFFF),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Row(
-                    children: [
-                      for (final item in [
-                        (0, Icons.home_rounded, Icons.home_outlined, 'Home'),
-                        (1, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Prices'),
-                        (2, Icons.shopping_bag_rounded, Icons.shopping_bag_outlined, 'Orders'),
-                        (3, Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
-                      ])
-                        Expanded(
-                          child: Semantics(
-                            button: true,
-                            selected: tab == item.$1,
-                            label: item.$4,
-                            child: InkWell(
-                              key: Key('nav-${item.$1}'),
-                              onTap: () => navigate(item.$1),
-                              child: Center(
-                                child: Container(
-                                  width: circle,
-                                  height: circle,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: tab == item.$1
-                                        ? fg
-                                        : Colors.transparent,
+  Widget navigation() {
+    final fg = Theme.of(context).colorScheme.onSurface;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        6,
+        18,
+        14 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Container(
+        height: 66,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: neuRaised(widget.dark, radius: 26, depth: 7),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            for (final item in [
+              (0, Icons.home_rounded, Icons.home_outlined, 'Home'),
+              (1, Icons.list_alt_rounded, Icons.list_alt_outlined, 'Prices'),
+              (
+                2,
+                Icons.shopping_bag_rounded,
+                Icons.shopping_bag_outlined,
+                'Orders',
+              ),
+              (
+                3,
+                Icons.person_rounded,
+                Icons.person_outline_rounded,
+                'Profile',
+              ),
+            ])
+              Flexible(
+                flex: tab == item.$1 ? 2 : 1,
+                child: Semantics(
+                  button: true,
+                  selected: tab == item.$1,
+                  label: item.$4,
+                  child: InkWell(
+                    key: Key('nav-${item.$1}'),
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => navigate(item.$1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      height: 48,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tab == item.$1 ? 16 : 12,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: tab == item.$1 ? brandGradient : null,
+                        boxShadow: tab == item.$1
+                            ? [
+                                BoxShadow(
+                                  color: BrandColors.purple.withValues(
+                                    alpha: .38,
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        tab == item.$1 ? item.$2 : item.$3,
-                                        size: 22,
-                                        color: tab == item.$1
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimary
-                                            : fg.withValues(alpha: .55),
-                                      ),
-                                      Text(
-                                        item.$4,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: tab == item.$1
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: tab == item.$1
-                                              ? Theme.of(
-                                                  context,
-                                                ).colorScheme.onPrimary
-                                              : fg.withValues(alpha: .55),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            tab == item.$1 ? item.$2 : item.$3,
+                            size: 22,
+                            color: tab == item.$1
+                                ? Colors.white
+                                : fg.withValues(alpha: .5),
+                          ),
+                          if (tab == item.$1) ...[
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                item.$4,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.fade,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+          ],
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 
   Widget home() => RefreshIndicator(
     onRefresh: () async {
@@ -735,7 +802,10 @@ class _CustomerShellState extends State<CustomerShell> {
     child: ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        const AspectRatio(aspectRatio: 1 / .58, child: ServiceSphere()),
+        AspectRatio(
+          aspectRatio: 1 / .7,
+          child: ServiceSphere(banners: banners),
+        ),
         if (session != null && activeOrderCount > 0) activeOrdersBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
@@ -758,11 +828,10 @@ class _CustomerShellState extends State<CustomerShell> {
                 onContinue: openBooking,
               ),
               if (failed) ...[
-                const Text('Brand information could not be loaded.'),
-                TextButton.icon(
-                  onPressed: refreshBrand,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Try again'),
+                const SizedBox(height: 14),
+                AccountError(
+                  'Brand information could not be loaded.',
+                  refreshBrand,
                 ),
               ],
             ],
@@ -776,83 +845,52 @@ class _CustomerShellState extends State<CustomerShell> {
     final dark = widget.dark;
     final primary = Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const Key('home-active-orders'),
-          onTap: () => navigate(2),
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: dark
-                    ? [const Color(0xFF1A1B2E), const Color(0xFF1E2040)]
-                    : [const Color(0xFFEEF0FF), const Color(0xFFE8ECFF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: primary.withValues(alpha: dark ? 0.3 : 0.2),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primary.withValues(alpha: dark ? 0.12 : 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Container(
+        decoration: neuRaised(dark, radius: 24, depth: 6),
+        child: Material(
+          color: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: const Key('home-active-orders'),
+            onTap: () => navigate(2),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconChip(
                         Icon(
                           Icons.local_laundry_service_rounded,
                           color: primary,
                           size: 22,
                         ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            width: 18,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B6B),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: dark
-                                    ? const Color(0xFF1A1B2E)
-                                    : const Color(0xFFEEF0FF),
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '$activeOrderCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                        size: 46,
+                      ),
+                      Positioned(
+                        top: -3,
+                        right: -3,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: brandRaised(shape: BoxShape.circle),
+                          child: Text(
+                            '$activeOrderCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -863,10 +901,9 @@ class _CustomerShellState extends State<CustomerShell> {
                           activeOrderCount == 1
                               ? '1 Active Order'
                               : '$activeOrderCount Active Orders',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: dark ? Colors.white : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -874,9 +911,7 @@ class _CustomerShellState extends State<CustomerShell> {
                           'Tap to track your orders',
                           style: TextStyle(
                             fontSize: 12,
-                            color: dark
-                                ? Colors.white.withValues(alpha: 0.6)
-                                : Colors.black54,
+                            color: mutedText(context),
                           ),
                         ),
                       ],
@@ -884,26 +919,27 @@ class _CustomerShellState extends State<CustomerShell> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 14,
+                      vertical: 8,
                     ),
-                    decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
+                    decoration: brandRaised(radius: 20),
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'View',
                           style: TextStyle(
-                            color: primary,
+                            color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_rounded, size: 16, color: primary),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ],
                     ),
                   ),
@@ -916,21 +952,70 @@ class _CustomerShellState extends State<CustomerShell> {
     );
   }
 
+  Widget homeCard({Key? key, VoidCallback? onTap, required Widget child}) =>
+      Container(
+        decoration: neuRaised(widget.dark, radius: 24, depth: 6),
+        child: Material(
+          color: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: key,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+              child: child,
+            ),
+          ),
+        ),
+      );
+
   Widget addressSection() {
-    final dark = widget.dark;
-    final fg = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
+    final muted = mutedText(context);
+    Widget lines(String title, String subtitle, {Widget? badge}) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            ?badge,
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: muted, height: 1.35),
+        ),
+      ],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            const Icon(Icons.location_on_rounded, size: 20),
-            const SizedBox(width: 8),
-            const Expanded(
+            const SizedBox(width: 4),
+            Expanded(
               child: Text(
                 'Pickup address',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontSize: 18),
               ),
             ),
             if (session != null && addresses.isNotEmpty) ...[
@@ -949,239 +1034,113 @@ class _CustomerShellState extends State<CustomerShell> {
             ],
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (session == null)
-          InkWell(
+          homeCard(
             onTap: signIn,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: dark ? const Color(0xFF161722) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : const Color(0xFFE2E8F0),
+            child: Row(
+              children: [
+                IconChip(
+                  Icon(Icons.person_outline_rounded, color: primary, size: 21),
+                  size: 44,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: dark ? 0.2 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: lines(
+                    'Sign in to select address',
+                    'Choose from your saved addresses or add a new one',
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.person_outline_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sign in to select address',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Choose from your saved addresses or add a new one',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: fg.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, size: 20),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 22, color: muted),
+              ],
             ),
           )
         else if (loadingAddresses)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: dark ? const Color(0xFF161722) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: dark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+          homeCard(
+            child: const SizedBox(
+              height: 44,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
             ),
           )
         else if (selectedAddress != null)
-          InkWell(
+          homeCard(
             key: const Key('home-address-card'),
             onTap: showAddressSelector,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: dark ? const Color(0xFF161722) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : const Color(0xFFE2E8F0),
+            child: Row(
+              children: [
+                IconChip(
+                  Icon(
+                    selectedAddress!
+                            .text('label')
+                            .toLowerCase()
+                            .contains('office')
+                        ? Icons.apartment_outlined
+                        : Icons.home_outlined,
+                    color: primary,
+                    size: 21,
+                  ),
+                  size: 44,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: dark ? 0.25 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      selectedAddress!.text('label').toLowerCase().contains('office')
-                          ? Icons.apartment_outlined
-                          : Icons.home_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              selectedAddress!.text('label').isNotEmpty
-                                  ? selectedAddress!.text('label')
-                                  : 'Pickup address',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: lines(
+                    selectedAddress!.text('label').isNotEmpty
+                        ? selectedAddress!.text('label')
+                        : 'Pickup address',
+                    '${selectedAddress!.text('addressLine')}, ${selectedAddress!.text('pincode')}',
+                    badge: selectedAddress!.isDefault
+                        ? Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: brandRaised(radius: 8),
+                            child: const Text(
+                              'DEFAULT',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: .5,
                               ),
                             ),
-                            if (selectedAddress!.isDefault) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'DEFAULT',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.green,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${selectedAddress!.text('addressLine')}, ${selectedAddress!.text('pincode')}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: fg.withValues(alpha: 0.65),
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
+                          )
+                        : null,
                   ),
-                  Icon(
-                    Icons.unfold_more_rounded,
-                    size: 20,
-                    color: fg.withValues(alpha: 0.5),
-                  ),
-                ],
-              ),
+                ),
+                Icon(Icons.unfold_more_rounded, size: 20, color: muted),
+              ],
             ),
           )
         else
-          InkWell(
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => AddressesScreen(
-                    api: accounts,
-                    session: session!,
+          homeCard(
+            onTap: openManageAddresses,
+            child: Row(
+              children: [
+                IconChip(
+                  Icon(
+                    Icons.add_location_alt_outlined,
+                    color: primary,
+                    size: 21,
+                  ),
+                  size: 44,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: lines(
+                    'Add a pickup address',
+                    'Save where we should collect your laundry',
                   ),
                 ),
-              );
-              loadAddresses();
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: dark ? const Color(0xFF161722) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : const Color(0xFFE2E8F0),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.add_location_alt_outlined),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Add a pickup address',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, size: 20),
-                ],
-              ),
+                Icon(Icons.chevron_right_rounded, size: 22, color: muted),
+              ],
             ),
           ),
       ],
@@ -1191,10 +1150,6 @@ class _CustomerShellState extends State<CustomerShell> {
   Future<void> showAddressSelector() async {
     final chosen = await showModalBottomSheet<SavedAddress>(
       context: context,
-      backgroundColor: widget.dark ? const Color(0xFF161722) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -1207,66 +1162,60 @@ class _CustomerShellState extends State<CustomerShell> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      ctx,
+                    ).colorScheme.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Choose Pickup Address',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: Theme.of(ctx).textTheme.titleLarge,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
               for (final a in addresses)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: NeuOption(
+                    selected: selectedAddress?.id == a.id,
                     onTap: () => Navigator.pop(ctx, a),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selectedAddress?.id == a.id
-                              ? Theme.of(ctx).colorScheme.primary
-                              : Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.12),
-                          width: selectedAddress?.id == a.id ? 2 : 1,
+                    child: Row(
+                      children: [
+                        Icon(
+                          selectedAddress?.id == a.id
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                          size: 20,
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            selectedAddress?.id == a.id
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_off,
-                            color: selectedAddress?.id == a.id
-                                ? Theme.of(ctx).colorScheme.primary
-                                : Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.4),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  a.text('label').isNotEmpty ? a.text('label') : 'Address',
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                a.text('label').isNotEmpty
+                                    ? a.text('label')
+                                    : 'Address',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
+                              ),
+                              const SizedBox(height: 2),
+                              Opacity(
+                                opacity: .75,
+                                child: Text(
                                   '${a.text('addressLine')}, ${a.text('pincode')}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(ctx).textTheme.bodySmall,
+                                  style: const TextStyle(fontSize: 12),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1316,10 +1265,7 @@ class _CustomerShellState extends State<CustomerShell> {
     }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AddressesScreen(
-          api: accounts,
-          session: s,
-        ),
+        builder: (_) => AddressesScreen(api: accounts, session: s),
       ),
     );
     await loadAddresses();
@@ -1333,16 +1279,14 @@ class _CustomerShellState extends State<CustomerShell> {
     }
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => AddressEditor(
-          api: accounts,
-          session: s,
-        ),
+        builder: (_) => AddressEditor(api: accounts, session: s),
       ),
     );
     if (saved == true && mounted) {
       await loadAddresses();
     }
   }
+
   Widget orders() => OrdersScreen(
     key: ValueKey('orders-${session?.customer.id}-$sessionGeneration'),
     session: session,
@@ -1410,10 +1354,9 @@ class ServicesHorizontalBar extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: dark ? 0.6 : 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: dark ? 0.6 : 0.5),
             ),
           ),
         ),
@@ -1432,25 +1375,11 @@ class ServicesHorizontalBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: 96,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? const Color(0xFF161722)
-                        : const Color(0xFFFFFFFF),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: dark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : const Color(0xFFE2E8F0),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: dark ? 0.25 : 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
                   ),
+                  decoration: neuRaised(dark, radius: 18, depth: 4),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1484,4 +1413,3 @@ class ServicesHorizontalBar extends StatelessWidget {
     );
   }
 }
-

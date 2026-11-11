@@ -101,11 +101,13 @@ class _BookingScreenState extends State<BookingScreen> {
         setState(() {
           savedAddresses = list;
           if (list.isNotEmpty) {
-            final targetId = preferredId ??
+            final targetId =
+                preferredId ??
                 selectedAddressId ??
                 widget.initialAddress?.id ??
                 widget.initialAddressId;
-            selectedAddressId = targetId != null && list.any((a) => a.id == targetId)
+            selectedAddressId =
+                targetId != null && list.any((a) => a.id == targetId)
                 ? targetId
                 : list.first.id;
             final chosen = list.firstWhere(
@@ -139,21 +141,34 @@ class _BookingScreenState extends State<BookingScreen> {
     padding: const EdgeInsets.all(24),
     children: [
       if (submitError != null)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.error.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.error.withValues(alpha: .3),
+        Container(
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+          decoration: neuRaised(
+            Theme.of(context).brightness == Brightness.dark,
+            radius: 22,
+            depth: 5,
+          ),
+          child: Row(
+            children: [
+              IconChip(
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 19,
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
-            ),
-            child: Text(
-              submitError!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  submitError!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       switch (step) {
@@ -163,18 +178,19 @@ class _BookingScreenState extends State<BookingScreen> {
         3 => timeStep(),
         _ => reviewStep(),
       },
-      const SizedBox(height: 16),
+      const SizedBox(height: 18),
       if (step > 0)
         OutlinedButton(
           onPressed: () => setState(
             () => step = step == 4 && scheduledFromHome
                 ? (widget.initialAddress != null
-                    ? (widget.branches.length > 1 ? 1 : 0)
-                    : 1)
+                      ? (widget.branches.length > 1 ? 1 : 0)
+                      : 1)
                 : step - 1,
           ),
           child: const Text('Back'),
         ),
+      const SizedBox(height: 6),
       TextButton(onPressed: widget.onCancel, child: const Text('Cancel')),
     ],
   );
@@ -191,20 +207,21 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: .3),
-              ),
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: .05),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            decoration: neuRaised(
+              Theme.of(context).brightness == Brightness.dark,
+              radius: 30,
+              depth: 10,
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.lock_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
+                IconChip(
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 26,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  size: 60,
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -212,7 +229,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, height: 1.5),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 FilledButton.icon(
                   key: const Key('booking-sign-in'),
                   onPressed: () {
@@ -240,57 +257,44 @@ class _BookingScreenState extends State<BookingScreen> {
           ...savedAddresses.map((a) {
             final isChosen = selectedAddressId == a.id;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: NeuOption(
+                selected: isChosen,
                 onTap: () => setState(() {
                   selectedAddressId = a.id;
                   address.text = a.text('addressLine');
                   postal.text = a.text('pincode');
                 }),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isChosen
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: .15),
-                      width: isChosen ? 2 : 1,
+                child: Row(
+                  children: [
+                    Icon(
+                      isChosen
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
                     ),
-                    color: isChosen
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isChosen
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_off,
-                        color: isChosen
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: .5),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              a.text('label').isEmpty ? 'Address' : a.text('label'),
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            a.text('label').isEmpty
+                                ? 'Address'
+                                : a.text('label'),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Opacity(
+                            opacity: .75,
+                            child: Text(
                               '${a.text('addressLine')}, ${a.text('pincode')}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                              style: const TextStyle(fontSize: 12),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -382,35 +386,39 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          TextFormField(
-            key: const Key('address'),
-            controller: address,
-            minLines: 2,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Address',
-              hintText: 'Flat, building, street and area',
+          NeuField(
+            child: TextFormField(
+              key: const Key('address'),
+              controller: address,
+              minLines: 2,
+              maxLines: 3,
+              decoration: neuBareField.copyWith(
+                labelText: 'Address',
+                hintText: 'Flat, building, street and area',
+              ),
+              validator: (value) => (value ?? '').trim().length < 10
+                  ? 'Enter a complete pickup address.'
+                  : null,
             ),
-            validator: (value) => (value ?? '').trim().length < 10
-                ? 'Enter a complete pickup address.'
-                : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            key: const Key('postal'),
-            controller: postal,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            decoration: const InputDecoration(labelText: 'Pincode'),
-            validator: (value) =>
-                RegExp(r'^[1-9]\d{5}$').hasMatch((value ?? '').trim())
-                ? null
-                : 'Enter a valid six-digit postal code.',
+          NeuField(
+            child: TextFormField(
+              key: const Key('postal'),
+              controller: postal,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              decoration: neuBareField.copyWith(labelText: 'Pincode'),
+              validator: (value) =>
+                  RegExp(r'^[1-9]\d{5}$').hasMatch((value ?? '').trim())
+                  ? null
+                  : 'Enter a valid six-digit postal code.',
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 22),
           FilledButton(
             onPressed: () {
               if (form.currentState!.validate()) setState(() => step = 1);
@@ -425,7 +433,10 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget branchStep() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const PageHeading('Select branch', 'Select the Vclean branch serving your pickup.'),
+      const PageHeading(
+        'Select branch',
+        'Select the Vclean branch serving your pickup.',
+      ),
       if (widget.branches.isEmpty)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
@@ -433,18 +444,31 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
       ...widget.branches.map(
         (branch) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: OutlinedButton(
-            onPressed: () => setState(() {
+          padding: const EdgeInsets.only(bottom: 12),
+          child: NeuOption(
+            selected: branch.id == branchId,
+            padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+            onTap: () => setState(() {
               branchId = branch.id;
               step = scheduledFromHome ? 4 : 2;
             }),
             child: Row(
               children: [
-                const Icon(Icons.storefront_outlined),
+                IconChip(
+                  Icon(
+                    Icons.storefront_outlined,
+                    size: 19,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: Text(branch.name)),
-                const Icon(Icons.chevron_right),
+                Expanded(
+                  child: Text(
+                    branch.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
               ],
             ),
           ),
@@ -465,11 +489,19 @@ class _BookingScreenState extends State<BookingScreen> {
         'Pickup date',
         'Choose a collection date within the next two weeks.',
       ),
-      CalendarDatePicker(
-        initialDate: day,
-        firstDate: DateTime.now().add(const Duration(days: 1)),
-        lastDate: DateTime.now().add(const Duration(days: 14)),
-        onDateChanged: (value) => setState(() => day = value),
+      Container(
+        margin: const EdgeInsets.only(bottom: 22),
+        decoration: neuRaised(
+          Theme.of(context).brightness == Brightness.dark,
+          radius: 26,
+          depth: 7,
+        ),
+        child: CalendarDatePicker(
+          initialDate: day,
+          firstDate: DateTime.now().add(const Duration(days: 1)),
+          lastDate: DateTime.now().add(const Duration(days: 14)),
+          onDateChanged: (value) => setState(() => day = value),
+        ),
       ),
       FilledButton(
         onPressed: () => setState(() => step = 3),
@@ -487,15 +519,25 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
       ...sampleWindows.map(
         (slot) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: RadioListTile<String>(
-            value: slot,
-            groupValue: window,
-            title: Text(slot),
-            onChanged: (value) => setState(() => window = value ?? slot),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: NeuOption(
+            selected: window == slot,
+            onTap: () => setState(() => window = slot),
+            child: Row(
+              children: [
+                Icon(
+                  window == slot
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                ),
+                const SizedBox(width: 12),
+                Text(slot, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
           ),
         ),
       ),
+      const SizedBox(height: 10),
       FilledButton(
         onPressed: () => setState(() => step = 4),
         child: const Text('Continue → Review'),
@@ -512,14 +554,33 @@ class _BookingScreenState extends State<BookingScreen> {
           'Confirm pickup',
           'Review the details of your scheduled pickup.',
         ),
-        _detail('Address', '${address.text.trim()}\n${postal.text.trim()}'),
-        if (branchId != null)
-          _detail(
-            'Branch',
-            widget.branches.firstWhere((branch) => branch.id == branchId).name,
+        Container(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 4),
+          decoration: neuRaised(
+            Theme.of(context).brightness == Brightness.dark,
+            radius: 26,
+            depth: 7,
           ),
-        _detail('Pickup date', '${day.day}/${day.month}/${day.year}'),
-        _detail('Time slot', window),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _detail(
+                'Address',
+                '${address.text.trim()}\n${postal.text.trim()}',
+              ),
+              if (branchId != null)
+                _detail(
+                  'Branch',
+                  widget.branches
+                      .firstWhere((branch) => branch.id == branchId)
+                      .name,
+                ),
+              _detail('Pickup date', '${day.day}/${day.month}/${day.year}'),
+              _detail('Time slot', window),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 4,
@@ -541,13 +602,11 @@ class _BookingScreenState extends State<BookingScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .2),
-                ),
+              padding: const EdgeInsets.all(16),
+              decoration: neuRaised(
+                Theme.of(context).brightness == Brightness.dark,
+                radius: 22,
+                depth: 5,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -557,7 +616,8 @@ class _BookingScreenState extends State<BookingScreen> {
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  FilledButton.tonal(
+                  const SizedBox(height: 4),
+                  OutlinedButton(
                     onPressed: widget.signIn,
                     child: const Text('Sign in / Register'),
                   ),
@@ -650,9 +710,23 @@ class _BookingScreenState extends State<BookingScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          label.toUpperCase(),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+          ),
+        ),
         const SizedBox(height: 6),
-        Text(value, style: const TextStyle(fontSize: 16, height: 1.5)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 15,
+            height: 1.45,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     ),
   );

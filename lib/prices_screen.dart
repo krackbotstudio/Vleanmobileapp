@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'appearance.dart';
 import 'brand_api.dart';
 import 'catalog.dart';
 import 'customer_api.dart';
@@ -108,7 +109,6 @@ class _PricesScreenState extends State<PricesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final filtered = items.where((item) => item.matches(search.text)).toList();
     return RefreshIndicator(
       onRefresh: refresh,
@@ -117,74 +117,85 @@ class _PricesScreenState extends State<PricesScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Pricing',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      IconButton(
+                  ScreenHeader(
+                    'Pricing',
+                    subtitle: 'Tap any item to flip it and see its prices.',
+                    actions: [
+                      NeuIconButton(
+                        icon: Icons.refresh_rounded,
                         tooltip: 'Refresh prices',
                         onPressed: loading ? null : refresh,
-                        icon: const Icon(Icons.refresh),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Select branch',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      'Select branch',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
                   if (widget.branches.isNotEmpty)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Row(
                         children: widget.branches
                             .map(
                               (branch) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: NeuOption(
                                   key: Key('branch-${branch.id}'),
-                                  label: Text(branch.name),
                                   selected: branch.id == branchId,
-                                  showCheckmark: false,
-                                  selectedColor: colors.primary,
-                                  labelStyle: TextStyle(
-                                    color: branch.id == branchId
-                                        ? colors.onPrimary
-                                        : colors.onSurface,
+                                  radius: 22,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 11,
                                   ),
-                                  onSelected: (_) {
+                                  onTap: () {
                                     if (branch.id == branchId) return;
                                     search.clear();
                                     if (scroll.hasClients) scroll.jumpTo(0);
                                     load(branch.id);
                                   },
+                                  child: Text(
+                                    branch.name,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             )
                             .toList(),
                       ),
                     ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    key: const Key('price-search'),
-                    controller: search,
-                    onChanged: (_) => setState(() => flippedId = null),
-                    decoration: const InputDecoration(
-                      hintText: 'Search by item, segment, or service…',
-                      prefixIcon: Icon(Icons.search),
+                  const SizedBox(height: 8),
+                  NeuField(
+                    leading: IconChip(
+                      Icon(
+                        Icons.search_rounded,
+                        size: 19,
+                        color: mutedText(context),
+                      ),
+                    ),
+                    child: TextField(
+                      key: const Key('price-search'),
+                      controller: search,
+                      onChanged: (_) => setState(() => flippedId = null),
+                      decoration: neuBareField.copyWith(
+                        hintText: 'Search by item, segment, or service…',
+                      ),
                     ),
                   ),
                 ],
@@ -206,17 +217,33 @@ class _PricesScreenState extends State<PricesScreen>
             )
           else if (error != null || branchId == null)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+                decoration: neuRaised(
+                  Theme.of(context).brightness == Brightness.dark,
+                  radius: 26,
+                  depth: 7,
+                ),
                 child: Column(
                   children: [
+                    IconChip(
+                      Icon(
+                        Icons.cloud_off_rounded,
+                        size: 22,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      size: 48,
+                    ),
+                    const SizedBox(height: 14),
                     Text(
                       error ??
                           'Branches could not be loaded. Please try again.',
                       textAlign: TextAlign.center,
+                      style: TextStyle(height: 1.4, color: mutedText(context)),
                     ),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
+                    const SizedBox(height: 18),
+                    FilledButton(
                       onPressed: refresh,
                       child: const Text('Retry prices'),
                     ),
@@ -238,15 +265,15 @@ class _PricesScreenState extends State<PricesScreen>
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
               sliver: SliverLayoutBuilder(
                 builder: (context, constraints) {
-                  final width = (constraints.crossAxisExtent - 12) / 2;
+                  final width = (constraints.crossAxisExtent - 16) / 2;
                   return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
                       mainAxisExtent: math.max(206, width * 1.28),
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
@@ -287,7 +314,7 @@ class PriceFlipCard extends StatelessWidget {
     label: '${item.name}, tap to ${flipped ? 'see image' : 'see prices'}',
     child: InkWell(
       key: Key('price-${item.id}'),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(22),
       onTap: onTap,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: flipped ? 1 : 0),
@@ -307,12 +334,10 @@ class PriceFlipCard extends StatelessWidget {
               transform: Matrix4.identity()..rotateY(back ? math.pi : 0),
               child: Container(
                 clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                decoration: neuRaised(
+                  Theme.of(context).brightness == Brightness.dark,
+                  radius: 22,
+                  depth: 6,
                 ),
                 child: back ? backFace(context) : frontFace(context),
               ),
@@ -327,9 +352,10 @@ class PriceFlipCard extends StatelessWidget {
       ? const SizedBox.shrink()
       : Text(
           'From ${rupees(item.startingPrice!)}',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         );
   Widget frontFace(BuildContext context) => Column(
     children: [
@@ -410,9 +436,10 @@ class PriceFlipCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 rupees(price.paise),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ],

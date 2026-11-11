@@ -16,6 +16,7 @@ class LoginScreen extends StatefulWidget {
   final CustomerAuth auth;
   final DateTime Function()? now;
   final Future<void> Function(CustomerSession) onAuthenticated;
+  final VoidCallback? onSkip;
   const LoginScreen({
     super.key,
     this.brand,
@@ -23,12 +24,16 @@ class LoginScreen extends StatefulWidget {
     required this.auth,
     this.now,
     required this.onAuthenticated,
+    this.onSkip,
   });
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _bareField = neuBareField;
+  static const _muted = BrandColors.muted;
+
   final phone = TextEditingController(), code = TextEditingController();
   final form = GlobalKey<FormState>();
   String? requestId, error;
@@ -120,28 +125,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: customerTheme(true),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        const ColoredBox(color: Colors.black),
-        if (widget.enableVideo && !MediaQuery.disableAnimationsOf(context))
-          const LoginVideo(),
-        const ColoredBox(color: Color(0x9E000000)),
-        LayoutBuilder(
+  Widget build(BuildContext context) {
+    final sending = requestId == null;
+    final canSubmit = !busy && !(sending && remaining > 0);
+    return Theme(
+      data: customerTheme(false),
+      child: DecoratedBox(
+        decoration: pageBackdrop(false),
+        child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(32, 20, 32, 118),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: (constraints.maxHeight - 138).clamp(
+                minHeight: (constraints.maxHeight - 60).clamp(
                   0,
                   double.infinity,
                 ),
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 388),
+                  constraints: const BoxConstraints(maxWidth: 400),
                   child: AutofillGroup(
                     child: Form(
                       key: form,
@@ -150,228 +153,340 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Center(
-                            child: Image.asset(
-                              'assets/vclean-logo.png',
-                              width: requestId == null ? 108 : 80,
-                              height: requestId == null ? 108 : 80,
-                              semanticLabel: 'Vclean Laundry logo',
+                            child: Container(
+                              padding: EdgeInsets.all(sending ? 18 : 14),
+                              decoration: neuRaised(
+                                false,
+                                radius: 36,
+                                depth: 9,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Image.asset(
+                                  BrandColors.logo,
+                                  width: sending ? 112 : 84,
+                                  semanticLabel: 'Vclean Laundry logo',
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 30),
                           Text(
-                            requestId == null
-                                ? (widget.brand?.name ?? 'Vclean Laundry')
-                                : 'Verification Code',
+                            sending ? 'Welcome Back' : 'Verification Code',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .5,
+                              color: BrandColors.ink,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -.4,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          if (requestId == null) ...[
-                            const Text(
-                              'LAUNDRY  •  DRY CLEAN  •  IRONING',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xA6FFFFFF),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.8,
-                              ),
+                          const SizedBox(height: 6),
+                          Text(
+                            sending
+                                ? 'Sign in or sign up with your mobile number'
+                                : 'Enter the 6-digit code sent to +91 $requestedPhone',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: _muted,
+                              fontSize: 14,
+                              height: 1.4,
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          ),
+                          const SizedBox(height: 26),
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+                            decoration: neuRaised(false, radius: 30, depth: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SizedBox(
-                                  width: 62,
-                                  child: TextFormField(
-                                    initialValue: '+91',
-                                    readOnly: true,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: const InputDecoration(
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 15,
+                                if (sending) ...[
+                                  raisedField(
+                                    Row(
+                                      children: [
+                                        iconChip(
+                                          const FaIcon(
+                                            FontAwesomeIcons.whatsapp,
+                                            color: Color(0xFF25D366),
+                                            size: 18,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Text(
+                                          '+91',
+                                          style: TextStyle(
+                                            color: BrandColors.ink,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Container(
+                                          width: 1,
+                                          height: 22,
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                          ),
+                                          color: const Color(0xFFD6D7E6),
+                                        ),
+                                        Expanded(
+                                          child: TextFormField(
+                                            key: const Key('phone'),
+                                            controller: phone,
+                                            enabled: !busy,
+                                            keyboardType: TextInputType.phone,
+                                            autofillHints: const [
+                                              AutofillHints
+                                                  .telephoneNumberNational,
+                                            ],
+                                            style: const TextStyle(
+                                              color: BrandColors.ink,
+                                              fontSize: 15,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                              LengthLimitingTextInputFormatter(
+                                                10,
+                                              ),
+                                            ],
+                                            decoration: _bareField.copyWith(
+                                              hintText: 'Mobile number',
+                                            ),
+                                            validator: (value) =>
+                                                RegExp(
+                                                  r'^[6-9]\d{9}$',
+                                                ).hasMatch(value ?? '')
+                                                ? null
+                                                : 'Enter a valid mobile number.',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    alignment: WrapAlignment.end,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      legalLink(
+                                        context,
+                                        'Terms & Conditions',
+                                        widget.brand?.terms ?? '',
+                                      ),
+                                      const Text(
+                                        '·',
+                                        style: TextStyle(color: _muted),
+                                      ),
+                                      legalLink(
+                                        context,
+                                        'Privacy Policy',
+                                        widget.brand?.privacy ?? '',
+                                      ),
+                                    ],
+                                  ),
+                                ] else
+                                  raisedField(
+                                    Row(
+                                      children: [
+                                        iconChip(
+                                          const Icon(
+                                            Icons.lock_outline_rounded,
+                                            color: _muted,
+                                            size: 19,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: TextFormField(
+                                            key: const Key('otp-code'),
+                                            controller: code,
+                                            enabled: !busy,
+                                            keyboardType: TextInputType.number,
+                                            autofillHints: const [
+                                              AutofillHints.oneTimeCode,
+                                            ],
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: BrandColors.ink,
+                                              fontSize: 24,
+                                              letterSpacing: 14,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                              LengthLimitingTextInputFormatter(
+                                                6,
+                                              ),
+                                            ],
+                                            decoration: _bareField.copyWith(
+                                              hintText: '••••••',
+                                            ),
+                                            validator: (value) =>
+                                                RegExp(
+                                                  r'^\d{6}$',
+                                                ).hasMatch(value ?? '')
+                                                ? null
+                                                : 'Enter the 6-digit code.',
+                                            onFieldSubmitted: (_) => confirm(),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 50),
+                                      ],
+                                    ),
+                                  ),
+                                if (error != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 14),
+                                    child: Semantics(
+                                      liveRegion: true,
+                                      child: Text(
+                                        error!,
+                                        style: const TextStyle(
+                                          color: Color(0xFFD64550),
+                                          fontSize: 13,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ),
+                                const SizedBox(height: 22),
+                                // Gradient, glow and disabled fade come from
+                                // the shared FilledButton theme.
+                                FilledButton(
+                                  key: Key(sending ? 'send-otp' : 'verify-otp'),
+                                  onPressed: canSubmit
+                                      ? (sending
+                                            ? () => requestCode()
+                                            : confirm)
+                                      : null,
+                                  child: Text(
+                                    busy
+                                        ? (sending ? 'Sending…' : 'Verifying…')
+                                        : sending
+                                        ? (remaining > 0
+                                              ? 'Try again in ${remaining}s'
+                                              : 'Accept & Send OTP')
+                                        : 'Confirm',
+                                  ),
                                 ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: TextFormField(
-                                    key: const Key('phone'),
-                                    controller: phone,
-                                    enabled: !busy,
-                                    keyboardType: TextInputType.phone,
-                                    autofillHints: const [
-                                      AutofillHints.telephoneNumberNational,
-                                    ],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
+                                if (!sending) ...[
+                                  const SizedBox(height: 16),
+                                  OutlinedButton(
+                                    key: const Key('resend-otp'),
+                                    onPressed: busy || remaining > 0
+                                        ? null
+                                        : () => requestCode(resend: true),
+                                    child: Text(
+                                      remaining > 0
+                                          ? 'Resend code in ${remaining}s'
+                                          : 'Resend code',
                                     ),
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(10),
-                                    ],
-                                    decoration: const InputDecoration(
-                                      hintText: 'Enter mobile number',
-                                      prefixIcon: Padding(
-                                        padding: EdgeInsets.all(13),
-                                        child: FaIcon(
-                                          FontAwesomeIcons.whatsapp,
-                                          color: Color(0xFF25D366),
-                                          size: 22,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  TextButton(
+                                    key: const Key('change-phone'),
+                                    onPressed: busy
+                                        ? null
+                                        : () => setState(() {
+                                            requestId = null;
+                                            code.clear();
+                                            error = null;
+                                          }),
+                                    child: const Text('Change number'),
+                                  ),
+                                ],
+                                if (sending && widget.onSkip != null) ...[
+                                  const SizedBox(height: 24),
+                                  const Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(
+                                          color: Color(0xFFD9DAE8),
                                         ),
                                       ),
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Text(
+                                          'OR',
+                                          style: TextStyle(
+                                            color: _muted,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(
+                                          color: Color(0xFFD9DAE8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Center(
+                                    child: DecoratedBox(
+                                      decoration: neuRaised(
+                                        false,
+                                        radius: 26,
+                                        depth: 5,
+                                      ),
+                                      child: TextButton.icon(
+                                        key: const Key('login-skip'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: BrandColors.ink,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 22,
+                                            vertical: 14,
+                                          ),
+                                          shape: const StadiumBorder(),
+                                          textStyle: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        onPressed: busy ? null : widget.onSkip,
+                                        icon: const Icon(
+                                          Icons.person_outline_rounded,
+                                          size: 18,
+                                          color: BrandColors.purple,
+                                        ),
+                                        label: const Text('Continue as guest'),
+                                      ),
                                     ),
-                                    validator: (value) =>
-                                        RegExp(
-                                          r'^[6-9]\d{9}$',
-                                        ).hasMatch(value ?? '')
-                                        ? null
-                                        : 'Enter a valid mobile number.',
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 8,
-                              alignment: WrapAlignment.center,
-                              children: [
-                                legalPill(
-                                  context,
-                                  'Terms & Conditions',
-                                  widget.brand?.terms ?? '',
-                                ),
-                                legalPill(
-                                  context,
-                                  'Privacy Policy',
-                                  widget.brand?.privacy ?? '',
-                                ),
-                              ],
-                            ),
-                          ] else ...[
-                            Text(
-                              'Enter the 6-digit code sent to +91 $requestedPhone',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(0xBFFFFFFF),
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            TextFormField(
-                              key: const Key('otp-code'),
-                              controller: code,
-                              enabled: !busy,
-                              keyboardType: TextInputType.number,
-                              autofillHints: const [AutofillHints.oneTimeCode],
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                letterSpacing: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(6),
-                              ],
-                              decoration: const InputDecoration(
-                                labelText: '6-digit code',
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
-                              ),
-                              validator: (value) =>
-                                  RegExp(r'^\d{6}$').hasMatch(value ?? '')
-                                  ? null
-                                  : 'Enter the 6-digit code.',
-                              onFieldSubmitted: (_) => confirm(),
-                            ),
-                          ],
-                          if (error != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 14),
-                              child: Semantics(
-                                liveRegion: true,
-                                child: Text(
-                                  error!,
-                                  style: const TextStyle(
-                                    color: Color(0xFFFF8C8C),
-                                    fontSize: 13,
+                                ],
+                                if (sending) ...[
+                                  const SizedBox(height: 22),
+                                  const Text.rich(
+                                    TextSpan(
+                                      style: TextStyle(
+                                        color: _muted,
+                                        fontSize: 13,
+                                      ),
+                                      children: [
+                                        TextSpan(text: 'New to Vclean? '),
+                                        TextSpan(
+                                          text: 'Verify your number to sign up',
+                                          style: TextStyle(
+                                            color: BrandColors.purple,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            key: Key(
-                              requestId == null ? 'send-otp' : 'verify-otp',
-                            ),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            onPressed:
-                                busy || (requestId == null && remaining > 0)
-                                ? null
-                                : requestId == null
-                                ? () => requestCode()
-                                : confirm,
-                            child: Text(
-                              busy
-                                  ? (requestId == null
-                                        ? 'Sending…'
-                                        : 'Verifying…')
-                                  : requestId == null
-                                  ? (remaining > 0
-                                        ? 'Try again in ${remaining}s'
-                                        : 'Accept & Send OTP')
-                                  : 'Confirm',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
+                                ],
+                              ],
                             ),
                           ),
-                          if (requestId != null) ...[
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              key: const Key('resend-otp'),
-                              onPressed: busy || remaining > 0
-                                  ? null
-                                  : () => requestCode(resend: true),
-                              child: Text(
-                                remaining > 0
-                                    ? 'Resend code in ${remaining}s'
-                                    : 'Resend code',
-                              ),
-                            ),
-                            TextButton(
-                              key: const Key('change-phone'),
-                              onPressed: busy
-                                  ? null
-                                  : () => setState(() {
-                                      requestId = null;
-                                      code.clear();
-                                      error = null;
-                                    }),
-                              child: const Text('Change number'),
-                            ),
-                          ],
-                          const SizedBox(height: 14),
-                          const StudioCredit(forceWhite: true),
+                          const SizedBox(height: 24),
+                          const StudioCredit(),
                         ],
                       ),
                     ),
@@ -381,38 +496,30 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ],
-    ),
-  );
-  Widget legalPill(BuildContext context, String label, String body) => Material(
-    color: const Color(0x1AFFFFFF),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-      side: const BorderSide(color: Color(0x33FFFFFF)),
-    ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: () => showDocument(context, label, body),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF60A5FA),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
-    ),
+    );
+  }
+
+  Widget raisedField(Widget child) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    decoration: neuRaised(false, radius: 20, depth: 5),
+    child: child,
   );
+
+  Widget iconChip(Widget icon) => IconChip(icon);
+
+  Widget legalLink(BuildContext context, String label, String body) =>
+      TextButton(
+        style: TextButton.styleFrom(
+          foregroundColor: BrandColors.purple,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        onPressed: () => showDocument(context, label, body),
+        child: Text(label),
+      );
 }
 
 class StudioCredit extends StatelessWidget {
@@ -435,15 +542,15 @@ class StudioCredit extends StatelessWidget {
           ),
         ),
       ),
+      const SizedBox(width: 6),
+      // Full-colour Tectangle mark; the light variant swaps the charcoal
+      // lettering for white on dark backgrounds and keeps the yellow.
       Image.asset(
-        'assets/tectangle-logo.png',
-        width: 85,
+        forceWhite || Theme.of(context).brightness == Brightness.dark
+            ? 'assets/tectangle-logo-light.png'
+            : 'assets/tectangle-logo.png',
         height: 22,
         fit: BoxFit.contain,
-        color: !forceWhite && Theme.of(context).brightness == Brightness.light
-            ? Theme.of(context).colorScheme.onSurface
-            : null,
-        colorBlendMode: BlendMode.srcIn,
         semanticLabel: 'Tectangle',
       ),
     ],

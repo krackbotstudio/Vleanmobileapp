@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'account_data.dart';
+import 'appearance.dart';
 import 'customer_api.dart';
 
 String failureMessage(Object error) => error is ApiException
@@ -40,12 +41,10 @@ class AccountPanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 14),
     padding: padding,
-    decoration: BoxDecoration(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF161722)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: Theme.of(context).colorScheme.outline),
+    decoration: neuRaised(
+      Theme.of(context).brightness == Brightness.dark,
+      radius: 24,
+      depth: 7,
     ),
     child: child,
   );
@@ -56,20 +55,38 @@ class AccountError extends StatelessWidget {
   final VoidCallback retry;
   const AccountError(this.message, this.retry, {super.key});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.symmetric(vertical: 8),
+    padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+    decoration: neuRaised(
+      Theme.of(context).brightness == Brightness.dark,
+      radius: 22,
+      depth: 5,
+    ),
+    child: Row(
       children: [
-        Text(
-          message,
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        IconChip(
+          Icon(
+            Icons.error_outline_rounded,
+            size: 19,
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
-        TextButton.icon(
-          onPressed: retry,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Try again'),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ),
         ),
+        TextButton(onPressed: retry, child: const Text('Try again')),
       ],
     ),
   );
@@ -80,13 +97,14 @@ class SectionLabel extends StatelessWidget {
   const SectionLabel(this.text, {super.key});
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 10, bottom: 10),
+    padding: const EdgeInsets.only(top: 14, bottom: 12, left: 4),
     child: Text(
       text,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        fontSize: 11,
+      style: TextStyle(
+        fontSize: 17,
         fontWeight: FontWeight.w700,
-        letterSpacing: .8,
+        letterSpacing: -.2,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     ),
   );
@@ -101,7 +119,8 @@ class OrderBadge extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final st = order.status.toUpperCase();
     final isPaid = order.paid;
-    final isDelivered = order.delivered || st.contains('DELIVER') || st.contains('COMPLET');
+    final isDelivered =
+        order.delivered || st.contains('DELIVER') || st.contains('COMPLET');
 
     Color bg;
     Color textColor;
@@ -111,10 +130,14 @@ class OrderBadge extends StatelessWidget {
       bg = const Color(0xFF047857);
       textColor = Colors.white;
       isFilled = true;
-    } else if (st.contains('CONFIRM') || st.contains('RECEIV') || st.contains('SCHEDUL')) {
+    } else if (st.contains('CONFIRM') ||
+        st.contains('RECEIV') ||
+        st.contains('SCHEDUL')) {
       bg = dark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5);
       textColor = dark ? const Color(0xFF34D399) : const Color(0xFF10B981);
-    } else if (order.cancelled || st.contains('CANCEL') || st.contains('FAIL')) {
+    } else if (order.cancelled ||
+        st.contains('CANCEL') ||
+        st.contains('FAIL')) {
       bg = dark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
       textColor = dark ? const Color(0xFFF87171) : const Color(0xFFEF4444);
     } else if (order.trackingStage == 1 ||

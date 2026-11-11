@@ -99,9 +99,7 @@ class CatalogApi {
     List<Branch> allowedBranches,
   ) async {
     if (branchId.isEmpty || !allowedBranches.any((b) => b.id == branchId)) {
-      throw const ApiException(
-        'Select a Vclean branch to view its prices.',
-      );
+      throw const ApiException('Select a Vclean branch to view its prices.');
     }
     final data = await api.request(
       '/items/price-list',

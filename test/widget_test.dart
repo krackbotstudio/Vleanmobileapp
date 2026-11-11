@@ -91,6 +91,12 @@ Future<void> start(
 }
 
 Future<void> navigate(WidgetTester tester, int index) async {
+  final skip = find.byKey(const Key('login-skip'));
+  if (skip.evaluate().isNotEmpty) {
+    await reveal(tester, skip);
+    await tester.tap(skip);
+    await tester.pumpAndSettle();
+  }
   await tester.tap(find.byKey(Key('nav-$index')));
   await tester.pumpAndSettle();
 }
@@ -107,10 +113,12 @@ void main() {
     await start(tester);
     expect(find.text('Accept & Send OTP'), findsOneWidget);
     expect(find.text('Book Now'), findsNothing);
-    for (final label in ['Home', 'Prices', 'Orders', 'Profile']) {
-      expect(find.text(label), findsOneWidget);
-    }
+    expect(find.byKey(const Key('nav-0')), findsNothing);
     await navigate(tester, 0);
+    for (var index = 0; index < 4; index++) {
+      expect(find.byKey(Key('nav-$index')), findsOneWidget);
+    }
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('Hello'), findsOneWidget);
     expect(
       tester
@@ -124,7 +132,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       Theme.of(tester.element(find.text('Hello'))).brightness,
-      Brightness.light,
+      Brightness.dark,
     );
     await navigate(tester, 3);
     expect(find.text('Welcome'), findsOneWidget);

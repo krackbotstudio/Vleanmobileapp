@@ -8,9 +8,12 @@ dependencies:
   cupertino_icons: ^2.0.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_secure_storage: ^11.2.0
   font_awesome_flutter: ^11.0.0
   http: ^1.6.0
+  shared_preferences: ^2.5.3
   video_player: ^2.14.1
 dev_dependencies:
   flutter_test:
@@ -21,8 +24,11 @@ flutter:
 
   assets:
     - assets/vclean-logo.png
+    - assets/vclean-badge-light.png
+    - assets/vclean-badge-purple.png
     - assets/dark-white-logo-big.png
     - assets/dark-white-chrome-icon.png
     - assets/tectangle-logo.png
+    - assets/tectangle-logo-light.png
     - assets/krackbot-logo.png
     - assets/service-icons/

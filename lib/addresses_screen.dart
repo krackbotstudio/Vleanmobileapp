@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'account_data.dart';
 import 'account_widgets.dart';
+import 'appearance.dart';
 import 'auth.dart';
 import 'brand_api.dart';
 import 'customer_api.dart';
@@ -107,85 +108,171 @@ class _AddressesScreenState extends State<AddressesScreen> {
     }
   }
 
+  Widget pill(String text, {bool accent = false}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: accent
+        ? brandRaised(radius: 10)
+        : neuPressed(
+            Theme.of(context).brightness == Brightness.dark,
+            radius: 10,
+          ),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: accent ? Colors.white : mutedText(context),
+      ),
+    ),
+  );
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('My Addresses')),
+  Widget build(BuildContext context) => NeuPage(
+    title: 'My Addresses',
     body: RefreshIndicator(
       onRefresh: refresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          const Text('Add and manage your pickup locations.'),
+          Text(
+            'Add and manage your pickup locations.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: mutedText(context),
+            ),
+          ),
           const SizedBox(height: 20),
           if (loading)
-            const Center(child: CircularProgressIndicator())
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            )
           else if (error != null)
             AccountError(error!, refresh)
           else if (addresses.isEmpty)
-            const AccountPanel(child: Text('No addresses yet. Add one below.'))
+            AccountPanel(
+              child: Row(
+                children: [
+                  IconChip(
+                    Icon(
+                      Icons.location_off_outlined,
+                      size: 19,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text('No addresses yet. Add one below.'),
+                  ),
+                ],
+              ),
+            )
           else
             ...addresses.map(
               (address) => AccountPanel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          address.text('label'),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
+                        IconChip(
+                          Icon(
+                            address
+                                    .text('label')
+                                    .toLowerCase()
+                                    .contains('office')
+                                ? Icons.apartment_outlined
+                                : Icons.home_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          size: 42,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    address.text('label'),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (address.isDefault)
+                                    pill('Default', accent: true),
+                                  if (locked.contains(address.id))
+                                    pill('Active order'),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                address.text('addressLine'),
+                                style: const TextStyle(height: 1.4),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Pincode: ${address.text('pincode')}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
                           ),
                         ),
-                        if (address.isDefault)
-                          const Chip(label: Text('Default')),
-                        if (locked.contains(address.id))
-                          const Chip(label: Text('Active order')),
                       ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(address.text('addressLine')),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Pincode: ${address.text('pincode')}',
-                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                     if (locked.contains(address.id))
                       const Padding(
                         padding: EdgeInsets.only(top: 12),
                         child: Text(
                           'Edit and delete are available after active orders here are completed or cancelled.',
-                          style: TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12, height: 1.4),
                         ),
                       )
                     else
-                      Wrap(
-                        spacing: 10,
-                        children: [
-                          TextButton.icon(
-                            key: Key('edit-address-${address.id}'),
-                            onPressed: deleting ? null : () => edit(address),
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit'),
-                          ),
-                          TextButton.icon(
-                            key: Key('delete-address-${address.id}'),
-                            onPressed: deleting ? null : () => remove(address),
-                            icon: const Icon(Icons.delete_outline, size: 18),
-                            label: const Text('Delete'),
-                          ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 4,
+                          children: [
+                            TextButton.icon(
+                              key: Key('edit-address-${address.id}'),
+                              onPressed: deleting ? null : () => edit(address),
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              label: const Text('Edit'),
+                            ),
+                            TextButton.icon(
+                              key: Key('delete-address-${address.id}'),
+                              onPressed: deleting
+                                  ? null
+                                  : () => remove(address),
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              ),
+                              label: const Text('Delete'),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
               ),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: loading || deleting ? null : () => edit(),
             icon: const Icon(Icons.add),
@@ -265,6 +352,7 @@ class _AddressEditorState extends State<AddressEditor> {
       if (mounted) setState(() => locating = false);
     }
   }
+
   @override
   void initState() {
     super.initState();
@@ -405,23 +493,28 @@ class _AddressEditorState extends State<AddressEditor> {
   Widget input(String key, String title, TextEditingController controller) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 14),
-        child: TextFormField(
-          key: Key(key),
-          controller: controller,
-          enabled: !busy,
-          maxLength: 180,
-          decoration: InputDecoration(labelText: title, counterText: ''),
-          validator: (v) => (v ?? '').trim().isEmpty ? 'Enter $title.' : null,
+        child: NeuField(
+          child: TextFormField(
+            key: Key(key),
+            controller: controller,
+            enabled: !busy,
+            maxLength: 180,
+            decoration: neuBareField.copyWith(
+              labelText: title,
+              counterText: '',
+            ),
+            validator: (v) => (v ?? '').trim().isEmpty ? 'Enter $title.' : null,
+          ),
         ),
       );
   Widget sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.only(top: 8, bottom: 8),
+    padding: const EdgeInsets.only(top: 10, bottom: 12, left: 4),
     child: Text(
       title,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.2,
+        letterSpacing: -.2,
       ),
     ),
   );
@@ -429,20 +522,22 @@ class _AddressEditorState extends State<AddressEditor> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !busy,
-    child: Scaffold(
-      appBar: AppBar(
-        title: Text(widget.address == null ? 'Add address' : 'Edit address'),
-      ),
+    child: NeuPage(
+      title: widget.address == null ? 'Add address' : 'Edit address',
       body: Form(
         key: form,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
             Text(
               'Add address details and check if we serve your area.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 13),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: mutedText(context),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             input('address-label', 'Label (e.g. Home, Office)', label),
             const SizedBox(height: 4),
             sectionHeader('Locate via GPS'),
@@ -451,9 +546,6 @@ class _AddressEditorState extends State<AddressEditor> {
               onPressed: locating || busy ? null : useCurrentLocation,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
               icon: locating
                   ? const SizedBox(
@@ -464,7 +556,10 @@ class _AddressEditorState extends State<AddressEditor> {
                   : const Icon(Icons.my_location, size: 20),
               label: Text(
                 locating ? 'Locating...' : 'Use Current Location (GPS)',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ),
             if (maps.text.isNotEmpty)
@@ -474,7 +569,9 @@ class _AddressEditorState extends State<AddressEditor> {
                   'Link: ${maps.text}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: 12),
                 ),
               ),
             if (gpsError != null)
@@ -493,20 +590,24 @@ class _AddressEditorState extends State<AddressEditor> {
             input('address-house', 'House / Flat no.', house),
             input('address-street', 'Street & area', street),
             input('address-city', 'City', city),
-            TextFormField(
-              key: const Key('address-pincode'),
-              controller: pincode,
-              enabled: !busy,
-              onChanged: pincodeChanged,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
-              decoration: const InputDecoration(labelText: 'Pincode (6 digits)'),
-              validator: (v) => RegExp(r'^[1-9]\d{5}$').hasMatch(v ?? '')
-                  ? null
-                  : 'Enter a valid six-digit pincode.',
+            NeuField(
+              child: TextFormField(
+                key: const Key('address-pincode'),
+                controller: pincode,
+                enabled: !busy,
+                onChanged: pincodeChanged,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                decoration: neuBareField.copyWith(
+                  labelText: 'Pincode (6 digits)',
+                ),
+                validator: (v) => RegExp(r'^[1-9]\d{5}$').hasMatch(v ?? '')
+                    ? null
+                    : 'Enter a valid six-digit pincode.',
+              ),
             ),
             const SizedBox(height: 6),
             if (checking)
@@ -520,7 +621,10 @@ class _AddressEditorState extends State<AddressEditor> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     SizedBox(width: 8),
-                    Text('Checking service areas...', style: TextStyle(fontSize: 12)),
+                    Text(
+                      'Checking service areas...',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
               )
@@ -535,40 +639,51 @@ class _AddressEditorState extends State<AddressEditor> {
                       : 'Served by ${branches.map((b) => b.name).join(', ')}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: branches.isEmpty ? Colors.orange : Colors.green,
+                    color: branches.isEmpty
+                        ? const Color(0xFFD97706)
+                        : const Color(0xFF059669),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('address-maps-url'),
-              controller: maps,
-              enabled: !busy,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Google Maps link (optional)',
+            NeuField(
+              child: TextFormField(
+                key: const Key('address-maps-url'),
+                controller: maps,
+                enabled: !busy,
+                keyboardType: TextInputType.url,
+                decoration: neuBareField.copyWith(
+                  labelText: 'Google Maps link (optional)',
+                ),
+                validator: (v) {
+                  final value = (v ?? '').trim();
+                  if (value.isEmpty) {
+                    return null;
+                  }
+                  final uri = Uri.tryParse(value);
+                  return uri != null &&
+                          uri.scheme == 'https' &&
+                          uri.host.isNotEmpty
+                      ? null
+                      : 'Enter a valid HTTPS Maps link.';
+                },
               ),
-              validator: (v) {
-                final value = (v ?? '').trim();
-                if (value.isEmpty) {
-                  return null;
-                }
-                final uri = Uri.tryParse(value);
-                return uri != null &&
-                        uri.scheme == 'https' &&
-                        uri.host.isNotEmpty
-                    ? null
-                    : 'Enter a valid HTTPS Maps link.';
-              },
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Set as default address'),
-              value: isDefault,
-              onChanged: busy
-                  ? null
-                  : (value) => setState(() => isDefault = value),
+            const SizedBox(height: 16),
+            NeuField(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Set as default address',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                value: isDefault,
+                onChanged: busy
+                    ? null
+                    : (value) => setState(() => isDefault = value),
+              ),
             ),
             if (error != null)
               Padding(
@@ -582,22 +697,16 @@ class _AddressEditorState extends State<AddressEditor> {
             FilledButton(
               onPressed: busy || checking || branches.isEmpty ? null : save,
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                minimumSize: const Size.fromHeight(52),
               ),
               child: Text(busy ? 'Saving…' : 'Save address'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             OutlinedButton(
               key: const Key('cancel-address'),
               onPressed: busy ? null : () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                minimumSize: const Size.fromHeight(52),
               ),
               child: const Text('Cancel'),
             ),

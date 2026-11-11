@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "C:/Users/sanje/AppData/Local/Temp/claude/f4f8615b546d4471/cfb93f60-0dd4-46ce-9e01-92bb30f13725/scratchpad/web"],
+      "port": 8765
+    }
+  ]
+}

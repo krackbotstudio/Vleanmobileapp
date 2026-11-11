@@ -26,7 +26,9 @@ class GpsLocationResult {
 Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
   final coords = await getCurrentGpsCoordinates();
   if (coords == null) {
-    throw Exception('Unable to retrieve current GPS location. Please ensure location permissions are enabled.');
+    throw Exception(
+      'Unable to retrieve current GPS location. Please ensure location permissions are enabled.',
+    );
   }
 
   final lat = coords.$1;
@@ -50,8 +52,12 @@ Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
       final data = jsonDecode(response.body);
       if (data is Map && data['address'] is Map) {
         final address = data['address'] as Map;
-        pincode = address['postcode']?.toString().replaceAll(RegExp(r'\s+'), '');
-        final rawCity = address['city'] ??
+        pincode = address['postcode']?.toString().replaceAll(
+          RegExp(r'\s+'),
+          '',
+        );
+        final rawCity =
+            address['city'] ??
             address['town'] ??
             address['village'] ??
             address['suburb'] ??
@@ -60,7 +66,8 @@ Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
         if (rawCity != null) city = rawCity.toString();
 
         final road = address['road']?.toString() ?? '';
-        final area = address['suburb']?.toString() ??
+        final area =
+            address['suburb']?.toString() ??
             address['neighbourhood']?.toString() ??
             address['residential']?.toString() ??
             '';

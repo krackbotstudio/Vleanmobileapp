@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vclean_laundry/service_sphere.dart';
 
 void main() {
-  testWidgets('ServiceSphere displays 3D logo and orbiting service text', (
+  testWidgets('ServiceSphere shows a banner carousel and service ribbon', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -17,22 +17,20 @@ void main() {
     );
     await tester.pump();
 
-    // Verifies the 3D logo asset is rendered on the sphere
-    expect(find.byType(Image), findsOneWidget);
-    final imageWidget = tester.widget<Image>(find.byType(Image));
-    expect(
-      (imageWidget.image as AssetImage).assetName,
-      'assets/vclean-logo.png',
-    );
-
-    // Verifies services are present in the widget tree
+    expect(find.byKey(const Key('home-carousel')), findsOneWidget);
+    expect(find.text('Doorstep pickup & delivery'), findsOneWidget);
     expect(find.text('Wash & Fold'), findsOneWidget);
 
-    // Verifies swipe gesture rotates to another service
-    await tester.drag(
-      find.byType(GestureDetector).first,
-      const Offset(-200, 0),
-    );
+    final carousel = tester.getRect(find.byKey(const Key('home-carousel')));
+    final second = find.text('Dry cleaning, done right');
+    expect(tester.getTopLeft(second).dx, greaterThan(carousel.right - 60));
+    await tester.pump(const Duration(seconds: 7));
+    for (var frame = 0; frame < 10; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(tester.getTopLeft(second).dx, lessThan(carousel.center.dx));
+
+    await tester.drag(find.byType(GestureDetector).last, const Offset(-200, 0));
     await tester.pump();
   });
 }

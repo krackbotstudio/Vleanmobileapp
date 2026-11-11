@@ -89,32 +89,22 @@ class _OrdersScreenState extends State<OrdersScreen>
       listenable: widget.previews,
       builder: (context, _) => ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Orders',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                ),
-              ),
+          ScreenHeader(
+            'Orders',
+            subtitle: widget.session == null
+                ? 'Log in to see your active and past orders.'
+                : 'Your ongoing and completed orders, with status and service details.',
+            actions: [
               if (widget.session != null)
-                IconButton(
+                NeuIconButton(
+                  icon: Icons.refresh_rounded,
                   tooltip: 'Refresh orders',
                   onPressed: loading ? null : refresh,
-                  icon: const Icon(Icons.refresh),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            widget.session == null
-                ? 'Log in to see your active and past orders.'
-                : 'Your ongoing and completed orders, with status and service details.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 18),
           if (widget.session == null)
             FilledButton(onPressed: widget.signIn, child: const Text('Log in'))
           else if (loading)
@@ -127,7 +117,21 @@ class _OrdersScreenState extends State<OrdersScreen>
           else if (error != null)
             AccountError(error!, refresh)
           else if (orders.isEmpty)
-            const AccountPanel(child: Text('No orders yet.'))
+            AccountPanel(
+              child: Row(
+                children: [
+                  IconChip(
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 19,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('No orders yet.')),
+                ],
+              ),
+            )
           else
             ...orders.map((order) {
               final date = calendarDate(order.text('pickupDate'));
@@ -135,7 +139,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 padding: EdgeInsets.zero,
                 child: InkWell(
                   key: Key('order-${order.id}'),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(24),
                   onTap: () => open(order),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
@@ -145,11 +149,9 @@ class _OrdersScreenState extends State<OrdersScreen>
                         Container(
                           width: 56,
                           height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: .06),
+                          decoration: neuPressed(
+                            Theme.of(context).brightness == Brightness.dark,
+                            radius: 18,
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -168,9 +170,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                                 date == null
                                     ? '—'
                                     : date.day.toString().padLeft(2, '0'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ],
@@ -196,7 +199,11 @@ class _OrdersScreenState extends State<OrdersScreen>
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, size: 20),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 22,
+                          color: mutedText(context),
+                        ),
                       ],
                     ),
                   ),
@@ -345,17 +352,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ? 0
         : current.due ??
               (bill.total - invoiceAdvance(bill, active)).clamp(0, bill.total);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order Details'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh order',
-            onPressed: loading ? null : refresh,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
+    return NeuPage(
+      title: 'Order Details',
+      actions: [
+        NeuIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Refresh order',
+          size: 40,
+          onPressed: loading ? null : refresh,
+        ),
+      ],
       body: RefreshIndicator(
         onRefresh: refresh,
         child: ListView(
@@ -429,15 +435,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                             Expanded(
                               child: Column(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 17,
-                                    backgroundColor:
-                                        index <= current.trackingStage!
-                                        ? const Color(0xFF109C76)
-                                        : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: .08),
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: index <= current.trackingStage!
+                                        ? brandRaised(shape: BoxShape.circle)
+                                        : neuPressed(
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark,
+                                            radius: 18,
+                                          ),
                                     child: Icon(
                                       const [
                                         Icons.check,
@@ -499,9 +506,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       ),
                       Text(
                         current.paid ? 'Paid' : rupees(due!),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -748,13 +756,20 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
                   ),
               ],
             ),
-            TextField(
-              controller: comment,
-              enabled: !busy,
-              maxLines: 3,
-              maxLength: 2000,
-              decoration: const InputDecoration(hintText: 'Optional comment'),
+            const SizedBox(height: 12),
+            NeuField(
+              child: TextField(
+                controller: comment,
+                enabled: !busy,
+                maxLines: 3,
+                maxLength: 2000,
+                decoration: neuBareField.copyWith(
+                  hintText: 'Optional comment',
+                  counterText: '',
+                ),
+              ),
             ),
+            const SizedBox(height: 8),
             if (error != null)
               Text(
                 error!,
@@ -768,7 +783,11 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
           onPressed: busy ? null : () => Navigator.pop(context, false),
           child: const Text('Not now'),
         ),
-        TextButton(
+        FilledButton(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(120, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+          ),
           onPressed: busy ? null : submit,
           child: Text(busy ? 'Submitting…' : 'Submit'),
         ),
