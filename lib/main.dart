@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'appearance.dart';
 import 'auth.dart';
@@ -19,9 +18,8 @@ import 'account_widgets.dart';
 import 'addresses_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
-import 'welcome_flow.dart';
 
-void main() => runApp(const VcleanApp(showIntro: true));
+void main() => runApp(const VcleanApp());
 
 typedef DarkToWhiteApp = VcleanApp;
 
@@ -51,50 +49,6 @@ class VcleanApp extends StatefulWidget {
 
 class _VcleanAppState extends State<VcleanApp> {
   bool dark = false;
-  bool ready = false;
-  bool introDone = false;
-  bool startAtLogin = true;
-  String language = 'en';
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.showIntro) {
-      ready = true;
-      introDone = true;
-      return;
-    }
-    loadIntro();
-  }
-
-  Future<void> loadIntro() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      if (!mounted) return;
-      setState(() {
-        language = prefs.getString('vclean_language') ?? 'en';
-        introDone = prefs.getBool('vclean_intro_seen') ?? false;
-        ready = true;
-      });
-    } catch (_) {
-      if (mounted) setState(() => ready = true);
-    }
-  }
-
-  Future<void> completeIntro(bool toLogin) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('vclean_intro_seen', true);
-      await prefs.setString('vclean_language', language);
-    } catch (_) {
-      // The intro can still finish if preferences are unavailable.
-    }
-    if (!mounted) return;
-    setState(() {
-      introDone = true;
-      startAtLogin = toLogin;
-    });
-  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -103,7 +57,6 @@ class _VcleanAppState extends State<VcleanApp> {
     theme: customerTheme(false),
     darkTheme: customerTheme(true),
     themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-    locale: Locale(language),
     supportedLocales: const [
       Locale('en'),
       Locale('ta'),
@@ -115,26 +68,18 @@ class _VcleanAppState extends State<VcleanApp> {
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: !ready
-        ? const SplashScreen()
-        : introDone
-        ? CustomerShell(
-            dark: dark,
-            startAtLogin: startAtLogin,
-            toggleTheme: () => setState(() => dark = !dark),
-            loadBrand: widget.loadBrand,
-            loadBanners: widget.loadBanners,
-            loadCatalogue: widget.loadCatalogue,
-            auth: widget.auth,
-            sessionStore: widget.sessionStore,
-            accountApi: widget.accountApi,
-            enableVideo: widget.enableVideo,
-          )
-        : WelcomeFlow(
-            language: language,
-            onLanguage: (code) => setState(() => language = code),
-            onFinished: completeIntro,
-          ),
+    home: CustomerShell(
+      dark: dark,
+      startAtLogin: true,
+      toggleTheme: () => setState(() => dark = !dark),
+      loadBrand: widget.loadBrand,
+      loadBanners: widget.loadBanners,
+      loadCatalogue: widget.loadCatalogue,
+      auth: widget.auth,
+      sessionStore: widget.sessionStore,
+      accountApi: widget.accountApi,
+      enableVideo: widget.enableVideo,
+    ),
   );
 }
 

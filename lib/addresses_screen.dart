@@ -333,7 +333,7 @@ class _AddressEditorState extends State<AddressEditor> {
         }
         if (result.streetArea != null &&
             result.streetArea!.isNotEmpty &&
-            street.text.isEmpty) {
+            true) {
           street.text = result.streetArea!;
         }
         if (result.pincode != null && result.pincode!.isNotEmpty) {
@@ -345,7 +345,17 @@ class _AddressEditorState extends State<AddressEditor> {
       if (mounted) {
         setState(() {
           gpsError =
-              'Could not fetch current GPS location. Please allow location access or enter manually.';
+              (e is PlatformException
+                  ? (e.message ??
+                      'Could not fetch current GPS location. Please allow location access.')
+                  : (() {
+                      final msg = e
+                          .toString()
+                          .replaceFirst(RegExp(r'^(Exception:\s*|Error:\s*)'), '');
+                      return msg.isNotEmpty
+                          ? msg
+                          : 'Could not fetch current GPS location.';
+                    })());
         });
       }
     } finally {

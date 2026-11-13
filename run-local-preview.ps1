@@ -53,19 +53,31 @@ $proxy = Start-Process -FilePath $nodeExecutable -ArgumentList 'tool\local_api_p
     -RedirectStandardOutput (Join-Path $runFolder 'proxy-output.log') -RedirectStandardError (Join-Path $runFolder 'proxy-error.log') -PassThru
 $proxy.Id | Set-Content -LiteralPath (Join-Path $runFolder 'proxy-process.txt')
 
-$dartArguments = @($toolSnapshot, '--no-version-check', '--suppress-analytics', 'run', '-d', 'web-server',
+# Release avoids the debug web-server blank page (DWDS / Dart Debug extension
+# and the Flutter engine view-insets assert that can kill the first frame).
+$dartArguments = @($toolSnapshot, '--no-version-check', '--suppress-analytics', 'run', '--release', '-d', 'web-server',
     '--web-hostname', '127.0.0.1', '--web-port', '8780', '--dart-define=API_BASE_URL=http://127.0.0.1:8781/api')
 $flutter = Start-Process -FilePath $dartExecutable -ArgumentList $dartArguments -WorkingDirectory $projectFolder -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $runFolder 'flutter-output.log') -RedirectStandardError (Join-Path $runFolder 'flutter-error.log') -PassThru
 $flutter.Id | Set-Content -LiteralPath (Join-Path $runFolder 'flutter-process.txt')
 
 $ready = $false
-for ($attempt = 0; $attempt -lt 50; $attempt++) {
+$flutterLog = Join-Path $runFolder 'flutter-output.log'
+for ($attempt = 0; $attempt -lt 120; $attempt++) {
     if ($flutter.HasExited -or $proxy.HasExited) { break }
+    $served = $false
+    if (Test-Path -LiteralPath $flutterLog) {
+        $served = [bool](Select-String -LiteralPath $flutterLog -Pattern 'is being served' -Quiet -ErrorAction SilentlyContinue)
+    }
     try {
         $site = Invoke-WebRequest -Uri 'http://127.0.0.1:8780/' -UseBasicParsing -TimeoutSec 2
+        $bundle = Invoke-WebRequest -Uri 'http://127.0.0.1:8780/main.dart.js' -UseBasicParsing -TimeoutSec 2
         $health = Invoke-WebRequest -Uri 'http://127.0.0.1:8781/api/branding/public/Vclean' -UseBasicParsing -TimeoutSec 2
-        if ($site.StatusCode -eq 200 -and $health.StatusCode -eq 200) { $ready = $true; break }
+        $bundleReady = $bundle.StatusCode -eq 200 -and $bundle.RawContentLength -gt 50000
+        if ($served -and $site.StatusCode -eq 200 -and $bundleReady -and $health.StatusCode -eq 200) {
+            $ready = $true
+            break
+        }
     } catch { }
     Start-Sleep -Seconds 1
 }

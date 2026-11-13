@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-
-import 'location_provider_stub.dart'
-    if (dart.library.html) 'location_provider_web.dart';
 
 class GpsLocationResult {
   final double latitude;
@@ -23,14 +22,26 @@ class GpsLocationResult {
   });
 }
 
-Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
-  final coords = await getCurrentGpsCoordinates();
-  if (coords == null) {
-    throw Exception(
-      'Unable to retrieve current GPS location. Please ensure location permissions are enabled.',
+const _channel = MethodChannel('com.vcleanlaundry/location');
+
+Future<(double, double)> getCurrentGpsCoordinates() async {
+  if (kIsWeb) {
+    throw PlatformException(
+      code: 'UNSUPPORTED',
+      message: 'GPS auto-detection is available on Android and iOS devices.',
     );
   }
+  final result = await _channel.invokeMethod<Map>('getCurrentLocation');
+  if (result == null) {
+    throw Exception('Unable to retrieve current GPS location.');
+  }
+  final lat = (result['latitude'] as num).toDouble();
+  final lng = (result['longitude'] as num).toDouble();
+  return (lat, lng);
+}
 
+Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
+  final coords = await getCurrentGpsCoordinates();
   final lat = coords.$1;
   final lng = coords.$2;
   final mapsUrl = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
@@ -42,20 +53,25 @@ Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
   final httpClient = client ?? http.Client();
   try {
     final uri = Uri.parse(
-      'https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lng&format=json',
+      'https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lng&format=json&addressdetails=1',
     );
     final response = await httpClient
-        .get(uri, headers: {'User-Agent': 'DarkToWhiteCustomerApp/1.0'})
-        .timeout(const Duration(seconds: 6));
+        .get(uri, headers: {'User-Agent': 'VcleanCustomerApp/1.0 (com.vcleanlaundry)'})
+        .timeout(const Duration(seconds: 8));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data is Map && data['address'] is Map) {
         final address = data['address'] as Map;
-        pincode = address['postcode']?.toString().replaceAll(
-          RegExp(r'\s+'),
-          '',
-        );
+
+        // Pincode (6 digits)
+        final rawPin =
+            address['postcode']?.toString().replaceAll(RegExp(r'\D'), '');
+        if (rawPin != null && rawPin.length == 6) {
+          pincode = rawPin;
+        }
+
+        // City
         final rawCity =
             address['city'] ??
             address['town'] ??
@@ -63,8 +79,11 @@ Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
             address['suburb'] ??
             address['city_district'] ??
             address['county'];
-        if (rawCity != null) city = rawCity.toString();
+        if (rawCity != null && rawCity.toString().trim().isNotEmpty) {
+          city = rawCity.toString().trim();
+        }
 
+        // Street & area
         final road = address['road']?.toString() ?? '';
         final area =
             address['suburb']?.toString() ??
@@ -78,7 +97,7 @@ Future<GpsLocationResult> fetchCurrentLocation({http.Client? client}) async {
       }
     }
   } catch (_) {
-    // If reverse geocode is slow or fails, we still return the coordinates and Maps URL
+    // Non-fatal: maps link and coordinates are still returned even if reverse-lookup fails
   } finally {
     if (client == null) httpClient.close();
   }
