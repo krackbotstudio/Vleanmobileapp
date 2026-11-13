@@ -38,6 +38,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Exclude x86/x86_64 (emulator-only); Play Store only needs arm/arm64
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     signingConfigs {

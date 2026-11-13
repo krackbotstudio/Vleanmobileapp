@@ -59,3 +59,4 @@ app.*.map.json
 
 # Packaged releases
 /releases/
+/android/local-maven/
