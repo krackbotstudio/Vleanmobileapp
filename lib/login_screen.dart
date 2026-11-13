@@ -34,6 +34,43 @@ class _LoginScreenState extends State<LoginScreen> {
   static const _bareField = neuBareField;
   static const _muted = BrandColors.muted;
 
+  static const _greetings = [
+    (text: 'Welcome', lang: 'English'),
+    (text: 'സ്വാഗതം', lang: 'മലയാളം'),
+    (text: 'స్వాగతం', lang: 'తెలుగు'),
+    (text: 'வணக்கம்', lang: 'தமிழ்'),
+    (text: 'सुस्वागतम', lang: 'मराठी'),
+    (text: 'स्वागत है', lang: 'हिन्दी'),
+    (text: 'ಸುಸ್ವಾಗತ', lang: 'ಕನ್ನಡ'),
+  ];
+
+  int _greetingIndex = 0;
+  Timer? _greetingTimer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _startGreetingTimer();
+  }
+
+  void _startGreetingTimer() {
+    _greetingTimer?.cancel();
+    if (MediaQuery.disableAnimationsOf(context)) return;
+    _greetingTimer = Timer.periodic(const Duration(milliseconds: 2400), (_) {
+      if (!mounted || requestId != null) return;
+      setState(() {
+        _greetingIndex = (_greetingIndex + 1) % _greetings.length;
+      });
+    });
+  }
+
+  void _selectGreeting(int index) {
+    setState(() {
+      _greetingIndex = index;
+    });
+    _startGreetingTimer();
+  }
+
   final phone = TextEditingController(), code = TextEditingController();
   final form = GlobalKey<FormState>();
   String? requestId, error;
@@ -118,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _greetingTimer?.cancel();
     timer?.cancel();
     phone.dispose();
     code.dispose();
@@ -170,30 +208,110 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 30),
-                          Text(
-                            sending ? 'Welcome Back' : 'Verification Code',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: BrandColors.ink,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -.4,
+                          const SizedBox(height: 24),
+                          if (sending) ...[
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 350),
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.12),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              ),
+                              child: Text(
+                                _greetings[_greetingIndex].text,
+                                key: ValueKey<int>(_greetingIndex),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: BrandColors.ink,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -.5,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            sending
-                                ? 'Sign in or sign up with your mobile number'
-                                : 'Enter the 6-digit code sent to +91 $requestedPhone',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: _muted,
-                              fontSize: 14,
-                              height: 1.4,
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Sign in or sign up with your mobile number',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _muted,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 26),
+                            const SizedBox(height: 14),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  for (int i = 0; i < _greetings.length; i++) ...[
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(20),
+                                      onTap: () => _selectGreeting(i),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 250),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 13,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _greetingIndex == i
+                                              ? BrandColors.purple
+                                              : BrandColors.purpleSoft,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          _greetings[i].lang,
+                                          style: TextStyle(
+                                            color: _greetingIndex == i
+                                                ? Colors.white
+                                                : BrandColors.purpleDeep,
+                                            fontSize: 12,
+                                            fontWeight: _greetingIndex == i
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (i < _greetings.length - 1)
+                                      const SizedBox(width: 6),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const Text(
+                              'Verification Code',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: BrandColors.ink,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -.4,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Enter the 6-digit code sent to +91 $requestedPhone',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: _muted,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 22),
                           Container(
                             padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
                             decoration: neuRaised(false, radius: 30, depth: 10),
